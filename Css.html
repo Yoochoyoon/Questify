@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy RPG Quest Board - Deluxe Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@400;700;900&family=Suranna&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-cream': '#FEF9F0',
+                        'point-red': '#E14D33',
+                        'deep-green': '#009675',
+                        'light-green': '#72C09B',
+                        'point-orange': '#FA9B32',
+                        'gold': '#FFC439',
+                        'indie-pink': '#F2D1CD',
+                        'sky-blue': '#29A9E1',
+                        'dark-charcoal': '#1E1E1E',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        nunito: ['Nunito', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Nunito', 'Malgun Gothic', sans-serif;
+            background-color: #EADFC9;
+            background-image: radial-gradient(#1E1E1E 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        /* 고급 케이크 생크림 및 앤틱 무늬 같은 정교한 레이스 테두리 효과 */
+        .antique-border {
+            border: 4px solid #1E1E1E;
+            background-image: 
+                radial-gradient(circle at 100% 150%, transparent 24%, #1E1E1E 24%, #1E1E1E 28%, transparent 28%),
+                radial-gradient(circle at 0% 150%, transparent 24%, #1E1E1E 24%, #1E1E1E 28%, transparent 28%);
+            background-size: 12px 12px;
+        }
+        /* 갱신/번쩍임 애니메이션 */
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+            animation: shimmer 2.5s infinite;
+        }
+    </style>
+</head>
+<body class="p-5 md:p-10 min-h-screen flex items-center justify-center text-dark-charcoal selection:bg-gold">
+
+    <div class="w-full max-w-6xl bg-bg-cream border-[5px] border-dark-charcoal rounded-[32px] p-6 md:p-10 relative shadow-[12px_12px_0px_rgba(30,30,30,1)] overflow-hidden">
+        
+        <div class="absolute top-3 left-3 w-6 h-6 border-t-4 border-l-4 border-dark-charcoal rounded-tl-md"></div>
+        <div class="absolute top-3 right-3 w-6 h-6 border-t-4 border-r-4 border-dark-charcoal rounded-tr-md"></div>
+        <div class="absolute bottom-3 left-3 w-6 h-6 border-b-4 border-l-4 border-dark-charcoal rounded-bl-md"></div>
+        <div class="absolute bottom-3 right-3 w-6 h-6 border-b-4 border-r-4 border-dark-charcoal rounded-br-md"></div>
+
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-8 pb-6 border-b-4 border-dashed border-dark-charcoal relative">
+            <div class="flex items-center gap-3">
+                <svg class="w-8 h-8 text-point-red" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M2 22l2-4h16l2 4H2zm10-11l-4-3V3l4 2 4-2v5l-4 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h1 class="font-cinzel text-3xl font-black tracking-widest bg-gradient-to-r from-point-red to-point-orange bg-clip-text text-transparent">✦ QUEST BOARD ✦</h1>
+            </div>
+            
+            <div class="mt-4 sm:mt-0 bg-indie-pink border-4 border-dark-charcoal rounded-xl px-6 py-2 shadow-[4px_4px_0px_#1E1E1E] flex items-center gap-4 relative">
+                <div class="w-3 h-3 bg-dark-charcoal rounded-full shadow-[inset_-1px_-1px_2px_rgba(255,255,255,0.6)]"></div>
+                <span class="font-black text-xl tracking-wider">2026.05.19</span>
+                <div class="w-3 h-3 bg-dark-charcoal rounded-full shadow-[inset_-1px_-1px_2px_rgba(255,255,255,0.6)]"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <div class="lg:col-span-7 space-y-6">
+                
+                <div class="bg-indie-pink border-4 border-dark-charcoal rounded-2xl p-5 shadow-[6px_6px_0px_#1E1E1E] relative">
+                    <div class="absolute top-3 left-3 w-3 h-3 bg-gray-630 bg-dark-charcoal rounded-full"></div>
+                    <div class="absolute top-3 right-3 w-3 h-3 bg-dark-charcoal rounded-full"></div>
+                    <div class="absolute bottom-3 left-3 w-3 h-3 bg-dark-charcoal rounded-full"></div>
+                    <div class="absolute bottom-3 right-3 w-3 h-3 bg-dark-charcoal rounded-full"></div>
+
+                    <div class="flex items-center justify-center gap-2 mb-4">
+                        <div class="h-[2px] bg-dark-charcoal flex-1"></div>
+                        <div class="w-1.5 h-1.5 bg-point-red rotate-45"></div>
+                        <span class="font-cinzel text-xs font-bold tracking-widest text-point-red">NEW MISSION</span>
+                        <div class="w-1.5 h-1.5 bg-point-red rotate-45"></div>
+                        <div class="h-[2px] bg-dark-charcoal flex-1"></div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="flex-1 space-y-2">
+                            <input type="text" class="w-full px-4 py-2.5 border-4 border-dark-charcoal rounded-xl text-sm font-black bg-bg-cream focus:outline-none" placeholder="수련할 퀘스트명을 각인하라..." value="고급 알고리즘 던전 돌파">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select class="px-3 py-2 border-4 border-dark-charcoal rounded-xl bg-bg-cream font-bold text-xs cursor-pointer">
+                                    <option>주간 레이드 ⚔️</option>
+                                    <option>일일 퀘스트 📜</option>
+                                </select>
+                                <select class="px-3 py-2 border-4 border-dark-charcoal rounded-xl bg-bg-cream font-bold text-xs cursor-pointer">
+                                    <option>보상: 500 EXP 💎</option>
+                                    <option>보상: 100 EXP 🪵</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="bg-point-orange border-4 border-dark-charcoal rounded-xl px-5 py-3 sm:py-0 font-black text-md shadow-[4px_4px_0px_#1E1E1E] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#1E1E1E] hover:bg-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#1E1E1E] transition-all flex flex-col items-center justify-center gap-1 min-w-[90px]">
+                            <span class="text-xl">⚒️</span>
+                            <span>등록</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-[#E2DDD3] border-4 border-dark-charcoal rounded-[24px] p-5 shadow-[inner_4px_4px_10px_rgba(0,0,0,0.15)] relative">
+                    
+                    <div class="flex justify-between items-center mb-5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">📜</span>
+                            <h2 class="font-cinzel text-xl font-bold tracking-wide">ACTIVE QUESTS</h2>
+                        </div>
+                        <div class="flex border-4 border-dark-charcoal rounded-xl overflow-hidden bg-dark-charcoal shadow-[2px_2px_0px_#1E1E1E]">
+                            <button class="bg-light-green px-3 py-1 text-xs font-black">진행</button>
+                            <button class="bg-bg-cream text-gray-400 px-3 py-1 text-xs font-black border-l-4 border-dark-charcoal">완료</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        
+                        <div class="bg-bg-cream border-4 border-dark-charcoal rounded-xl p-4 shadow-[4px_4px_0px_#1E1E1E] flex justify-between items-center relative overflow-hidden group">
+                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-deep-green"></div>
+                            <div class="pl-2">
+                                <h3 class="font-black text-base sm:text-lg mb-1 flex items-center gap-1.5">
+                                    <span>알고리즘 문제 3개 격파</span>
+                                    <span class="text-xs text-point-red bg-red-100 px-1.5 py-0.5 border-2 border-dark-charcoal rounded-md">HOT</span>
+                                </h3>
+                                <span class="inline-block text-[11px] font-black bg-indie-pink border-2 border-dark-charcoal rounded-md px-2 py-0.5">일일 수련</span>
+                            </div>
+                            <button class="bg-light-green border-4 border-dark-charcoal rounded-xl px-3 py-2 font-black text-xs shadow-[3px_3px_0px_#1E1E1E] hover:bg-deep-green hover:text-white transition-all flex items-center gap-1">
+                                <span>⚔️</span><span>수락</span>
+                            </button>
+                        </div>
+
+                        <div class="bg-bg-cream border-4 border-dark-charcoal rounded-xl p-4 shadow-[4px_4px_0px_#1E1E1E] flex justify-between items-center relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-point-orange"></div>
+                            <div class="pl-2">
+                                <h3 class="font-black text-base sm:text-lg mb-1">오픈소스 프로젝트 아키텍처 해체분석</h3>
+                                <span class="inline-block text-[11px] font-black bg-gold border-2 border-dark-charcoal rounded-md px-2 py-0.5">주간 보스</span>
+                            </div>
+                            <button class="bg-gold border-4 border-dark-charcoal rounded-xl px-3 py-2 font-black text-xs shadow-[3px_3px_0px_#1E1E1E] hover:bg-point-orange active:translate-y-1 transition-all flex items-center gap-1 animate-bounce">
+                                <span>👍</span><span>완료</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5">
+                <div class="flex gap-1 pl-3">
+                    <div class="bg-bg-cream border-t-4 border-x-4 border-dark-charcoal rounded-t-xl px-4 py-1.5 text-xs font-black z-10 translate-y-[4px]">영웅 스탯</div>
+                    <div class="bg-[#D8D0C3] border-t-4 border-x-4 border-dark-charcoal rounded-t-xl px-4 py-1.5 text-xs font-black opacity-60 hover:opacity-100 cursor-pointer transition-all">상점</div>
+                </div>
+
+                <div class="bg-bg-cream border-4 border-dark-charcoal rounded-2xl rounded-tl-none p-5 shadow-[8px_8px_0px_#1E1E1E] relative">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+                        
+                        <div class="sm:col-span-5 bg-white border-4 border-dark-charcoal rounded-2xl h-44 relative overflow-hidden flex items-center justify-center p-2 group shadow-[inset_2px_2px_6px_rgba(0,0,0,0.1)]">
+                            <div class="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:10px_10px]"></div>
+                            
+                            <div class="relative w-28 h-36 flex flex-col items-center justify-end">
+                                <div class="absolute top-1 w-0 h-0 border-l-[28px] border-l-transparent border-r-[28px] border-r-transparent border-b-[45px] border-b-deep-green drop-shadow-[2px_2px_0px_#1E1E1E] rotate-[-5deg] z-20">
+                                    <div class="absolute -top-2 left-2 w-1.5 h-6 bg-point-red border border-dark-charcoal rounded-full rotate-[35deg]"></div>
+                                </div>
+                                <div class="absolute top-[38px] w-16 h-3 bg-dark-charcoal rounded-full z-20"></div>
+                                
+                                <div class="w-14 h-14 bg-[#FCD34D] border-4 border-dark-charcoal rounded-full relative z-10 flex flex-col items-center justify-center pt-2">
+                                    <div class="absolute top-2 left-2 w-3 h-1 bg-dark-charcoal rotate-[10deg]"></div>
+                                    <div class="absolute top-2 right-2 w-3 h-1 bg-dark-charcoal rotate-[-15deg]"></div>
+                                    <div class="flex gap-3 mt-1">
+                                        <div class="w-2 h-2 bg-dark-charcoal rounded-full"></div>
+                                        <div class="w-2 h-2 bg-dark-charcoal rounded-full"></div>
+                                    </div>
+                                    <div class="w-4 h-1 bg-dark-charcoal rotate-[-5deg] mt-2 rounded"></div>
+                                </div>
+
+                                <div class="w-20 h-16 bg-point-red border-4 border-dark-charcoal rounded-t-[20px] -mt-3 relative z-0">
+                                    <div class="w-3 h-3 bg-gold border-2 border-dark-charcoal rounded-full absolute top-1 left-1/2 -translate-x-1/2"></div>
+                                </div>
+                            </div>
+
+                            <div class="absolute bottom-1 bg-dark-charcoal text-white text-[10px] font-black px-3 py-0.5 rounded-md flex items-center gap-1.5">
+                                <div class="w-1 h-1 bg-gold rounded-full"></div>
+                                <span class="font-cinzel tracking-wider">MAGE LV.99</span>
+                                <div class="w-1 h-1 bg-gold rounded-full"></div>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-7 space-y-3 bg-white border-4 border-dark-charcoal rounded-2xl p-4">
+                            <div>
+                                <div class="text-[10px] font-black text-gray-400">HERO IDENTITY</div>
+                                <div class="font-black text-md">코드 크래프터 (영웅)</div>
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-xs font-black">
+                                    <span class="text-deep-green">EXPERIENCE</span>
+                                    <span class="font-cinzel text-point-red">85 / 100 XP</span>
+                                </div>
+                                <div class="w-full h-5 bg-dark-charcoal border-[3px] border-dark-charcoal rounded-full p-[2px] overflow-hidden relative">
+                                    <div class="h-full bg-gradient-to-r from-deep-green to-light-green rounded-full relative overflow-hidden" style="width: 85%;">
+                                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-shimmer"></div>
+                                    </div>
+                                    <div class="absolute inset-0 flex justify-between px-4 pointer-events-none">
+                                        <div class="w-1 h-full bg-white/20"></div>
+                                        <div class="w-1 h-full bg-white/20"></div>
+                                        <div class="w-1 h-full bg-white/20"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="my-5 flex items-center justify-center gap-3">
+                        <div class="flex gap-1">
+                            <div class="w-1.5 h-1.5 bg-dark-charcoal rounded-full"></div>
+                            <div class="w-3 h-[2px] bg-dark-charcoal my-auto"></div>
+                        </div>
+                        <div class="w-3 h-3 border-2 border-dark-charcoal rotate-45 flex items-center justify-center"><div class="w-1.5 h-1.5 bg-point-orange rounded-full"></div></div>
+                        <span class="font-cinzel text-xs font-black tracking-widest text-dark-charcoal">STAGE ACHIEVEMENT</span>
+                        <div class="w-3 h-3 border-2 border-dark-charcoal rotate-45 flex items-center justify-center"><div class="w-1.5 h-1.5 bg-point-orange rounded-full"></div></div>
+                        <div class="flex gap-1">
+                            <div class="w-3 h-[2px] bg-dark-charcoal my-auto"></div>
+                            <div class="w-1.5 h-1.5 bg-dark-charcoal rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-indie-pink border-4 border-dark-charcoal rounded-xl p-4 relative">
+                        <div class="absolute top-1/2 left-2 -translate-y-1/2 w-3 h-3 bg-dark-charcoal rounded-full shadow-[1px_1px_0px_white]"></div>
+                        <div class="absolute top-1/2 right-2 -translate-y-1/2 w-3 h-3 bg-dark-charcoal rounded-full shadow-[1px_1px_0px_white]"></div>
+
+                        <div class="px-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-black text-sm text-dark-charcoal">종합 던전 격파율</span>
+                                <span class="font-cinzel font-black text-sm bg-bg-cream border-2 border-dark-charcoal rounded-md px-2 py-0.5 shadow-[2px_2px_0px_#1E1E1E]">2 / 3 COMPLETED</span>
+                            </div>
+                            
+                            <div class="w-full h-6 bg-white border-4 border-dark-charcoal rounded-lg overflow-hidden relative">
+                                <div class="h-full bg-gradient-to-r from-point-red via-point-orange to-gold transition-all" style="width: 66.6%;"></div>
+                                <div class="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_50%,#000_50%,#000_75%,transparent_75%,transparent)] bg-[size:12px_12px]"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
