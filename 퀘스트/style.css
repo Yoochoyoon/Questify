@@ -23,3 +23,11 @@
     padding: 15px;
 
 }
+
+.quest-card.clear-state button {
+    display: none;
+}
+
+.quest-card.fail-state button {
+    display: none;
+}
