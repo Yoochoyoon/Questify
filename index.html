@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Questify - 캐릭터 경험치 시스템</title>
+  <meta name="description" content="Questify 게임화 스케줄러 — 캐릭터 성장 시스템 프로토타입" />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #E5E5E5;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      color: #1f2937;
+    }
+    .phone-frame {
+      width: 100%; max-width: 420px;
+      background: #C8C8C8;
+      border-radius: 32px;
+      padding: 20px 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab {
+      flex: 1; padding: 14px 8px;
+      background: #B0B0B0; color: #555;
+      border-radius: 18px 18px 8px 8px;
+      text-align: center; font-size: 13px; font-weight: 600;
+      cursor: pointer;
+    }
+    .tab.active { background: #FFFFFF; color: #1f2937; }
+
+    .character-card {
+      background: linear-gradient(180deg, #F0F4F8 0%, #DEE5EE 100%);
+      border-radius: 24px;
+      aspect-ratio: 1 / 1;
+      display: flex; align-items: flex-end; justify-content: center;
+      margin-bottom: 14px;
+      position: relative; overflow: hidden;
+      padding-bottom: 20px;
+    }
+    .character-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 30px;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.1) 100%);
+    }
+    .character-sprite {
+      position: relative;
+      height: 88%;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex; align-items: flex-end; justify-content: center;
+      z-index: 2;
+    }
+    .character-sprite.bounce {
+      animation: characterBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes characterBounce {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-22px) scale(1.05); }
+      100% { transform: translateY(0); }
+    }
+    .character-sprite img {
+      height: 100%; width: auto;
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: drop-shadow(2px 4px 0 rgba(0,0,0,0.15));
+    }
+    .floating-xp {
+      position: absolute;
+      top: 45%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 26px; font-weight: 800;
+      color: #16a34a;
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.9);
+      pointer-events: none;
+      animation: floatUp 1.2s ease-out forwards;
+      z-index: 10;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20%  { opacity: 1; transform: translate(-50%, -80%) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -180%) scale(1); }
+    }
+    .character-sprite.legend::after {
+      content: '';
+      position: absolute;
+      top: -20px; left: -20px; right: -20px; bottom: -20px;
+      background: radial-gradient(circle, rgba(252, 211, 77, 0.4) 0%, transparent 65%);
+      border-radius: 50%;
+      animation: auraGlow 2s ease-in-out infinite;
+      z-index: -1;
+    }
+    @keyframes auraGlow {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+    .character-title {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 700;
+      color: #4b5563;
+      background: rgba(255,255,255,0.85);
+      padding: 5px 14px;
+      border-radius: 999px;
+      backdrop-filter: blur(4px);
+      letter-spacing: 0.5px;
+      z-index: 5;
+    }
+    .character-title.legend {
+      background: linear-gradient(135deg, #FCD34D, #F59E0B);
+      color: #78350F;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    }
+
+    .info-card, .today-card, .test-section {
+      background: #FFFFFF; border-radius: 24px;
+      padding: 20px; margin-bottom: 14px;
+    }
+    .test-section { padding: 16px; margin-bottom: 0; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .info-name { font-size: 13px; color: #6b7280; font-weight: 500; }
+    .info-level { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+    .info-level .level-num.levelup {
+      animation: levelNumPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      color: #f59e0b;
+    }
+    @keyframes levelNumPop {
+      0% { transform: scale(1); } 50% { transform: scale(1.5) rotate(-5deg); } 100% { transform: scale(1) rotate(0); }
+    }
+    .max-badge {
+      display: none; font-size: 11px; font-weight: 800;
+      padding: 4px 10px; border-radius: 999px;
+      background: linear-gradient(135deg, #FCD34D, #F59E0B);
+      color: #78350F; letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+      animation: maxGlow 2s ease-in-out infinite;
+    }
+    .max-badge.show { display: inline-block; }
+    @keyframes maxGlow {
+      0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 2px 16px rgba(245, 158, 11, 0.8); }
+    }
+    .bar-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; color: #6b7280; font-weight: 600; }
+    .bar-bg { width: 100%; height: 12px; background: #E5E7EB; border-radius: 999px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 999px; width: 0%; transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1); position: relative; }
+    .bar-fill.xp { background: linear-gradient(90deg, #4ADE80, #22C55E); box-shadow: 0 0 8px rgba(74, 222, 128, 0.4); }
+    .bar-fill.xp.max { background: linear-gradient(90deg, #FCD34D, #F59E0B); box-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
+    .bar-fill.daily { background: linear-gradient(90deg, #60A5FA, #3B82F6); box-shadow: 0 0 8px rgba(96, 165, 250, 0.4); }
+    .bar-fill::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); animation: shine 2.5s infinite; }
+    @keyframes shine { 0% { left: -100%; } 100% { left: 200%; } }
+    .today-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .today-title { font-size: 14px; font-weight: 700; color: #1f2937; }
+    .today-streak { font-size: 11px; background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 999px; font-weight: 700; }
+    .today-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .stat-box { background: #F9FAFB; border-radius: 12px; padding: 10px 12px; text-align: center; }
+    .stat-label { font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 2px; }
+    .stat-value { font-size: 18px; font-weight: 800; color: #1f2937; font-variant-numeric: tabular-nums; }
+    .stat-value .unit { font-size: 11px; color: #9ca3af; font-weight: 500; margin-left: 1px; }
+    .daily-bonus-badge { margin-top: 10px; padding: 8px; background: linear-gradient(135deg, #FEF3C7, #FDE68A); border-radius: 10px; text-align: center; font-size: 12px; font-weight: 700; color: #92400E; display: none; }
+    .daily-bonus-badge.show { display: block; animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .group-label { font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 8px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+    .group-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .group-label.focus { color: #7c3aed; margin-top: 12px; }
+    .quest-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .quest-btn { padding: 10px 4px; border: none; border-radius: 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; line-height: 1.4; transition: all 0.1s; }
+    .quest-btn .label { font-size: 11px; font-weight: 600; }
+    .quest-btn .xp { font-size: 13px; font-weight: 800; margin-top: 2px; }
+    .quest-btn.normal { background: #FCD34D; color: #78350F; box-shadow: 0 3px 0 #D97706; }
+    .quest-btn.normal:hover { background: #FBBF24; }
+    .quest-btn.normal:active { transform: translateY(3px); box-shadow: 0 0 0 #D97706; }
+    .quest-btn.focus { background: #DDD6FE; color: #5B21B6; box-shadow: 0 3px 0 #7C3AED; }
+    .quest-btn.focus:hover { background: #C4B5FD; }
+    .quest-btn.focus:active { transform: translateY(3px); box-shadow: 0 0 0 #7C3AED; }
+    .control-row { display: flex; gap: 6px; margin-top: 12px; }
+    .control-btn { flex: 1; padding: 8px; background: #F3F4F6; color: #6b7280; border: none; border-radius: 10px; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .control-btn:hover { background: #E5E7EB; }
+    .control-btn.day { background: #DBEAFE; color: #1E40AF; }
+    .control-btn.skip { background: #FEE2E2; color: #991B1B; }
+    .toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-200px); padding: 14px 24px; border-radius: 14px; font-size: 15px; font-weight: 800; z-index: 1000; opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); letter-spacing: 0.3px; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.levelup { background: linear-gradient(135deg, #FCD34D, #F59E0B); color: #1f2937; box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4); }
+    .toast.bonus   { background: linear-gradient(135deg, #A78BFA, #7C3AED); color: white; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4); }
+    .toast.day     { background: linear-gradient(135deg, #60A5FA, #3B82F6); color: white; box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4); }
+    .toast.evolve  { background: linear-gradient(135deg, #34D399, #10B981); color: white; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); }
+    .toast.maxlv   { background: linear-gradient(135deg, #FBBF24, #DC2626); color: white; box-shadow: 0 10px 40px rgba(220, 38, 38, 0.5); font-size: 16px; }
+    .confetti { position: fixed; width: 10px; height: 10px; pointer-events: none; z-index: 999; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <div class="phone-frame">
+    <div class="tabs">
+      <div class="tab active">캐릭터 정보</div>
+      <div class="tab">저장된 문제</div>
+      <div class="tab">상점</div>
+      <div class="tab">인벤토리</div>
+    </div>
+
+    <div class="character-card" id="characterCard">
+      <div class="character-title" id="characterTitle">초보 모험가</div>
+      <div class="character-sprite" id="characterSprite"></div>
+    </div>
+
+    <div class="info-card">
+      <div class="card-header">
+        <div>
+          <div class="info-name">이름</div>
+          <div class="info-level">레벨 <span class="level-num" id="levelNum">1</span><span class="max-badge" id="maxBadge">★ MAX</span></div>
+        </div>
+      </div>
+      <div class="bar-row"><span>XP</span><span id="xpValue">0 / 90</span></div>
+      <div class="bar-bg"><div class="bar-fill xp" id="xpBarFill"></div></div>
+    </div>
+
+    <div class="today-card">
+      <div class="today-header">
+        <div class="today-title">오늘의 진행률</div>
+        <div class="today-streak" id="streakBadge">🔥 1일 연속</div>
+      </div>
+      <div class="today-stats">
+        <div class="stat-box"><div class="stat-label">클리어 퀘스트</div><div class="stat-value"><span id="todayQuests">0</span><span class="unit">개</span></div></div>
+        <div class="stat-box"><div class="stat-label">획득 XP</div><div class="stat-value"><span id="todayXp">0</span><span class="unit"> XP</span></div></div>
+      </div>
+      <div class="bar-row"><span>일일 목표</span><span id="dailyGoalValue">0 / 100 XP</span></div>
+      <div class="bar-bg"><div class="bar-fill daily" id="dailyBarFill"></div></div>
+      <div class="daily-bonus-badge" id="dailyBonusBadge">🎁 일일 목표 달성! 보너스 +30 XP 지급됨</div>
+    </div>
+
+    <div class="test-section">
+      <div class="group-label">일반 퀘스트 (체크리스트형)</div>
+      <div class="quest-buttons">
+        <button class="quest-btn normal" onclick="completeQuest('일반-쉬움', 5)"><div class="label">쉬움</div><div class="xp">+5 XP</div></button>
+        <button class="quest-btn normal" onclick="completeQuest('일반-보통', 12)"><div class="label">보통</div><div class="xp">+12 XP</div></button>
+        <button class="quest-btn normal" onclick="completeQuest('일반-어려움', 25)"><div class="label">어려움</div><div class="xp">+25 XP</div></button>
+      </div>
+      <div class="group-label focus">코인걸기 퀘스트 (타이머+문제)</div>
+      <div class="quest-buttons">
+        <button class="quest-btn focus" onclick="completeQuest('집중-30분', 25)"><div class="label">30분 집중</div><div class="xp">+25 XP</div></button>
+        <button class="quest-btn focus" onclick="completeQuest('집중-1시간', 60)"><div class="label">1시간 집중</div><div class="xp">+60 XP</div></button>
+        <button class="quest-btn focus" onclick="completeQuest('집중-3시간', 200)"><div class="label">3시간 집중</div><div class="xp">+200 XP</div></button>
+      </div>
+      <div class="control-row">
+        <button class="control-btn day" onclick="nextDay()">📅 다음 날로</button>
+        <button class="control-btn skip" onclick="jumpLevel()">⏩ 레벨 +5</button>
+        <button class="control-btn" onclick="resetAll()">↻ 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* =================================================================
+       Questify — 캐릭터 경험치 시스템 프로토타입
+       담당: 김한 (Tech Writer)
+
+       [시스템 개요]
+       - 캐릭터 5단계 진화 (Lv 1 → 10 → 20 → 30 → 50)
+       - XP 통 분리: 누적 XP (영구) + 오늘의 XP (24h 리셋)
+       - 일일 목표 100 XP + 보너스 30 XP
+       - 연속 출석(스트릭) 카운터
+       - 만렙 상한 Lv 50
+
+       [팀 통합 API]
+         completeQuest(questName, xpAmount) — 퀘스트 클리어 시 호출
+         nextDay()                          — 자정 트리거
+    ================================================================= */
+
+    const SPRITES = {
+      beginner: { title: '초보 모험가',    src: 'sprites/beginner.png' },
+      warrior:  { title: '견습 전사',      src: 'sprites/warrior.png' },
+      knight:   { title: '기사',           src: 'sprites/knight.png' },
+      hero:     { title: '영웅',           src: 'sprites/hero.png' },
+      legend:   { title: '전설의 마법사',  src: 'sprites/legend.png' },
+    };
+
+    function renderSprite(spriteKey) {
+      const sprite = SPRITES[spriteKey];
+      const container = document.getElementById('characterSprite');
+      container.innerHTML = `<img src="${sprite.src}" alt="${sprite.title}" />`;
+      const titleEl = document.getElementById('characterTitle');
+      titleEl.textContent = sprite.title;
+      titleEl.classList.toggle('legend', spriteKey === 'legend');
+      container.classList.toggle('legend', spriteKey === 'legend');
+    }
+
+    function getSpriteKey(level) {
+      if (level >= 50) return 'legend';
+      if (level >= 30) return 'hero';
+      if (level >= 20) return 'knight';
+      if (level >= 10) return 'warrior';
+      return 'beginner';
+    }
+
+    const MAX_LEVEL = 50;
+    const DAILY_GOAL = 100;
+    const DAILY_BONUS = 30;
+
+    function getXpRequirement(level) {
+      if (level >= MAX_LEVEL) return Infinity;
+      return Math.floor(60 + level * 30);
+    }
+
+    let state = {
+      level: 1, currentXP: 0,
+      todayQuests: 0, todayXP: 0,
+      dailyBonusReceived: false, streak: 1,
+      currentSprite: 'beginner',
+    };
+
+    function completeQuest(questName, xpAmount) {
+      state.todayQuests += 1;
+      state.todayXP += xpAmount;
+      if (state.level < MAX_LEVEL) {
+        state.currentXP += xpAmount;
+        while (state.level < MAX_LEVEL && state.currentXP >= getXpRequirement(state.level)) {
+          state.currentXP -= getXpRequirement(state.level);
+          state.level += 1;
+          if (state.level >= MAX_LEVEL) { state.currentXP = 0; triggerMaxLevel(); }
+          else triggerLevelUp();
+          checkEvolution();
+        }
+      }
+      showFloatingXP(xpAmount);
+      bounceCharacter();
+      checkDailyBonus();
+      updateUI();
+    }
+
+    function checkDailyBonus() {
+      if (!state.dailyBonusReceived && state.todayXP >= DAILY_GOAL) {
+        state.dailyBonusReceived = true;
+        state.todayXP += DAILY_BONUS;
+        if (state.level < MAX_LEVEL) {
+          state.currentXP += DAILY_BONUS;
+          while (state.level < MAX_LEVEL && state.currentXP >= getXpRequirement(state.level)) {
+            state.currentXP -= getXpRequirement(state.level);
+            state.level += 1;
+            if (state.level >= MAX_LEVEL) { state.currentXP = 0; triggerMaxLevel(); }
+            else triggerLevelUp();
+            checkEvolution();
+          }
+        }
+        document.getElementById('dailyBonusBadge').classList.add('show');
+        showToast(`🎁 일일 목표 달성! +${DAILY_BONUS} XP`, 'bonus');
+      }
+    }
+
+    function checkEvolution() {
+      const newSprite = getSpriteKey(state.level);
+      if (newSprite !== state.currentSprite) {
+        state.currentSprite = newSprite;
+        renderSprite(newSprite);
+        if (newSprite !== 'legend') {
+          showToast(`✨ ${SPRITES[newSprite].title} 으로 진화!`, 'evolve');
+        }
+      }
+    }
+
+    function nextDay() {
+      if (state.todayQuests > 0) state.streak += 1;
+      else state.streak = 1;
+      state.todayQuests = 0;
+      state.todayXP = 0;
+      state.dailyBonusReceived = false;
+      document.getElementById('dailyBonusBadge').classList.remove('show');
+      showToast(`📅 새로운 하루! ${state.streak}일 연속`, 'day');
+      updateUI();
+    }
+
+    function jumpLevel() {
+      const oldLevel = state.level;
+      state.level = Math.min(state.level + 5, MAX_LEVEL);
+      state.currentXP = 0;
+      if (state.level >= MAX_LEVEL && oldLevel < MAX_LEVEL) triggerMaxLevel();
+      checkEvolution();
+      updateUI();
+    }
+
+    function resetAll() {
+      state = { level: 1, currentXP: 0, todayQuests: 0, todayXP: 0,
+        dailyBonusReceived: false, streak: 1, currentSprite: 'beginner' };
+      renderSprite('beginner');
+      document.getElementById('dailyBonusBadge').classList.remove('show');
+      document.getElementById('maxBadge').classList.remove('show');
+      document.getElementById('xpBarFill').classList.remove('max');
+      updateUI();
+    }
+
+    function updateUI() {
+      const isMax = state.level >= MAX_LEVEL;
+      const required = isMax ? 0 : getXpRequirement(state.level);
+      const xpPercent = isMax ? 100 : (state.currentXP / required) * 100;
+      const dailyPercent = Math.min((state.todayXP / DAILY_GOAL) * 100, 100);
+      document.getElementById('levelNum').textContent = state.level;
+      const maxBadge = document.getElementById('maxBadge');
+      const xpBarFill = document.getElementById('xpBarFill');
+      if (isMax) {
+        maxBadge.classList.add('show');
+        xpBarFill.classList.add('max');
+        document.getElementById('xpValue').textContent = 'MAX LEVEL';
+      } else {
+        maxBadge.classList.remove('show');
+        xpBarFill.classList.remove('max');
+        document.getElementById('xpValue').textContent = `${state.currentXP} / ${required}`;
+      }
+      xpBarFill.style.width = xpPercent + '%';
+      document.getElementById('todayQuests').textContent = state.todayQuests;
+      document.getElementById('todayXp').textContent = state.todayXP;
+      document.getElementById('dailyGoalValue').textContent = `${Math.min(state.todayXP, DAILY_GOAL)} / ${DAILY_GOAL} XP`;
+      document.getElementById('dailyBarFill').style.width = dailyPercent + '%';
+      document.getElementById('streakBadge').textContent = `🔥 ${state.streak}일 연속`;
+    }
+
+    function showFloatingXP(amount) {
+      const card = document.getElementById('characterCard');
+      const text = document.createElement('div');
+      text.className = 'floating-xp';
+      text.textContent = `+${amount} XP`;
+      card.appendChild(text);
+      setTimeout(() => text.remove(), 1200);
+    }
+    function bounceCharacter() {
+      const sprite = document.getElementById('characterSprite');
+      sprite.classList.remove('bounce');
+      void sprite.offsetWidth;
+      sprite.classList.add('bounce');
+    }
+    function triggerLevelUp() {
+      const levelNum = document.getElementById('levelNum');
+      levelNum.classList.remove('levelup');
+      void levelNum.offsetWidth;
+      levelNum.classList.add('levelup');
+      showToast(`🎉 LEVEL ${state.level} 달성!`, 'levelup');
+      fireConfetti();
+    }
+    function triggerMaxLevel() {
+      const levelNum = document.getElementById('levelNum');
+      levelNum.classList.remove('levelup');
+      void levelNum.offsetWidth;
+      levelNum.classList.add('levelup');
+      showToast(`🌟 MAX LEVEL ${MAX_LEVEL}! 전설이 되었다!`, 'maxlv');
+      fireConfetti(); setTimeout(fireConfetti, 300); setTimeout(fireConfetti, 600);
+    }
+    function showToast(message, type = 'levelup') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type;
+      void toast.offsetWidth;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), type === 'maxlv' ? 3000 : 1800);
+    }
+    function fireConfetti() {
+      const colors = ['#FCD34D', '#4ADE80', '#60A5FA', '#F472B6', '#A78BFA'];
+      for (let i = 0; i < 40; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.left = (50 + (Math.random() - 0.5) * 30) + '%';
+        c.style.top = '40%';
+        const angle = (Math.random() - 0.5) * Math.PI;
+        const velocity = 300 + Math.random() * 300;
+        const dx = Math.sin(angle) * velocity;
+        const dy = -Math.cos(angle) * velocity - 200;
+        c.animate([
+          { transform: 'translate(0, 0) rotate(0)', opacity: 1 },
+          { transform: `translate(${dx}px, ${dy + 600}px) rotate(${(Math.random() - 0.5) * 720}deg)`, opacity: 0 }
+        ], { duration: 1500 + Math.random() * 500, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 2000);
+      }
+    }
+
+    renderSprite('beginner');
+    updateUI();
+  </script>
+</body>
+</html>
