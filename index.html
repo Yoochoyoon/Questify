@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>퀴즈 프로젝트 최종 완성본</title>
+    <style>
+        /* 기본 스타일 및 레이아웃 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 우상단 보상 포인트 표시 바 */
+        .point-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 메인 컨테이너 패널 */
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* 퀴즈 만들기 버튼 */
+        .open-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background-color: #4f46e5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .open-btn:hover {
+            background-color: #4338ca;
+        }
+
+        /* 퀴즈 목록 구역 */
+        .quiz-section-title {
+            text-align: left;
+            font-size: 18px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+
+        .quiz-list-container {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .empty-message {
+            color: #9ca3af;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 14px;
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+        }
+
+        /* 각각의 퀴즈 카드 아이템 (클릭 가능하도록 수정) */
+        .quiz-card {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .quiz-card:hover {
+            transform: translateY(-2px);
+            border-color: #4f46e5;
+            background-color: #f5f3ff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 카드 내 우측 하단에 '풀기' 안내 띄우기 */
+        .quiz-card::after {
+            content: '풀기 ➔';
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            font-size: 13px;
+            color: #4f46e5;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .quiz-card:hover::after {
+            opacity: 1;
+        }
+
+        .quiz-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .quiz-badge {
+            background-color: #e0e7ff;
+            color: #4338ca;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .quiz-reward-tag {
+            color: #059669;
+            font-size: 13px;
+            font-weight: bold;
+            margin-right: 40px;
+            /* '풀기' 텍스트와 안 겹치게 여백 */
+        }
+
+        .quiz-question {
+            font-size: 15px;
+            color: #1f2937;
+            font-weight: 500;
+            white-space: pre-line;
+            margin-bottom: 4px;
+        }
+
+        /* 생성자용 관리 모드 힌트 */
+        .quiz-admin-hint {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        /* ------------------ 공통 모달 팝업 스타일 ------------------ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1f2937;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4b5563;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* 풀기 전 전용 퀴즈 텍스트 스타일 */
+        .solve-question-text {
+            font-size: 16px;
+            color: #1f2937;
+            background-color: #f3f4f6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            white-space: pre-line;
+            line-height: 1.5;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .cancel-btn {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .cancel-btn:hover {
+            background-color: #e5e7eb;
+        }
+
+        .submit-btn {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background-color: #059669;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            gap: 10px;
+            position: absolute;
+            left: 20px;
+            top: 200px;
+        }
+
+        .toolbar-btn {
+            padding: 30px 18px;
+            background-color: rgb(255, 255, 255);
+            box-shadow: 0 0 0 0.5px rgba(79, 70, 229, 0.1);
+        }
+
+        .toolbar-btn:hover {
+            background-color: rgb(233, 233, 233);
+            transition: ease 0.3s;
+        }
+
+        .tab {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .enabled {
+            display: flex;
+        }
+
+        .disabled {
+            display: none;
+        }
+
+        /* 투두리스트 카드 컨테이너 */
+        .todo-list-container {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 각각의 투두 카드 아이템 */
+        .todo-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 16px;
+            cursor: grab;
+            /* 잡을 수 있다는 마우스 커서 표시 */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            user-select: none;
+            /* 드래그할 때 텍스트 블록 지정 방지 */
+        }
+
+        .todo-item:hover {
+            background-color: #f9fafb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .quiz-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 16px;
+            cursor: pointer;
+            /* 잡을 수 있다는 마우스 커서 표시 */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            user-select: none;
+            /* 드래그할 때 텍스트 블록 지정 방지 */
+        }
+
+        .quiz-item:hover {
+            transform: translateY(-2px);
+            border-color: #4f46e5;
+            background-color: #f5f3ff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 마우스로 붙잡고 드래그 중인 카드의 스타일 */
+        .todo-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #4f46e5;
+            background-color: #eeebff;
+        }
+
+        .todo-text {
+            font-size: 15px;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .quiz-text {
+            font-size: 15px;
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        #tempAddQuizInTodoButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="toolbar">
+        <button id="todoTabBtn" class="btn toolbar-btn">할 일 목록</button>
+        <button id="quizTabBtn" class="btn toolbar-btn">퀴즈 게임</button>
+    </div>
+    <div id="todoContainer" class="enabled tab">
+        <button id="tempAddQuizInTodoButton">(임시)퀴즈 추가</button>
+        <div class="container">
+            <h1>📅 오늘의 할 일 목록</h1>
+
+            <form id="todoForm" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="todoInput" placeholder="새로운 할 일을 입력하세요..." required
+                    style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                <button type="submit" class="btn submit-btn"
+                    style="background-color: #4f46e5; margin: 0; white-space: nowrap;">추가</button>
+            </form>
+
+            <div id="todoListContainer" class="todo-list-container">
+            </div>
+        </div>
+    </div>
+    <div id="quizContainer" class="disabled tab">
+        <div class="point-badge">
+            <span>💰 내 보상 포인트:</span>
+            <span id="userPoints">0</span><span> P</span>
+        </div>
+
+        <div class="container">
+            <h1>📝 조별 프로젝트: 퀴즈 마스터</h1>
+
+            <button class="open-btn" id="openModalBtn">➕ 새로운 퀴즈 만들기</button>
+
+            <div class="quiz-section-title">📂 생성된 퀴즈 목록 (클릭하여 풀기)</div>
+            <div class="quiz-list-container" id="quizListContainer">
+                <div class="empty-message">아직 만들어진 퀴즈가 없습니다. 첫 번째 문제를 생성해 보세요!</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="createModalOverlay">
+            <div class="modal-content">
+                <div class="modal-header">🧩 새로운 퀴즈 만들기</div>
+                <form id="quizForm">
+                    <div class="form-group">
+                        <label for="quizQuestion">질문 (Question)</label>
+                        <textarea id="quizQuestion" rows="3" placeholder="문제를 입력하세요..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="quizAnswer">정답 (Answer)</label>
+                        <input type="text" id="quizAnswer" placeholder="정답을 입력하세요..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quizReward">보상 포인트 (Reward)</label>
+                        <input type="number" id="quizReward" value="10" min="0">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn cancel-btn" id="closeCreateModalBtn">취소</button>
+                        <button type="submit" class="btn submit-btn">문제 생성</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="solveModalOverlay">
+            <div class="modal-content">
+                <div class="modal-header">✏️ 퀴즈 도전!</div>
+
+                <div class="solve-question-text" id="solveQuestionContainer">질문 텍스트</div>
+
+                <form id="solveForm">
+                    <div class="form-group">
+                        <label for="userAnswer">내가 생각한 정답</label>
+                        <input type="text" id="userAnswer" placeholder="답안을 입력하세요..." required autocomplete="off">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn cancel-btn" id="closeSolveModalBtn">그만두기</button>
+                        <button type="submit" class="btn submit-btn" style="background-color: #4f46e5;">정답 제출</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <script>
+        // DOM 요소
+        const openModalBtn = document.getElementById('openModalBtn');
+        const closeCreateModalBtn = document.getElementById('closeCreateModalBtn');
+        const closeSolveModalBtn = document.getElementById('closeSolveModalBtn');
+
+        const createModalOverlay = document.getElementById('createModalOverlay');
+        const solveModalOverlay = document.getElementById('solveModalOverlay');
+
+        const quizForm = document.getElementById('quizForm');
+        const solveForm = document.getElementById('solveForm');
+
+        const quizListContainer = document.getElementById('quizListContainer');
+        const solveQuestionContainer = document.getElementById('solveQuestionContainer');
+        const userPointsDisplay = document.getElementById('userPoints');
+        const userAnswerInput = document.getElementById('userAnswer');
+
+        const quizTabBtn = document.getElementById('quizTabBtn');
+        const todoTabBtn = document.getElementById('todoTabBtn');
+
+        const quizContainer = document.getElementById('quizContainer');
+        const todoContainer = document.getElementById('todoContainer');
+
+        // ------------------ 투두리스트 전역 상태 및 DOM 요소 ------------------
+        const todoForm = document.getElementById('todoForm');
+        const todoInput = document.getElementById('todoInput');
+        const todoListContainer = document.getElementById('todoListContainer');
+
+        // 할 일 목록 데이터 배열
+        const todoList = [];
+
+        // 어플리케이션 상태 전역 상태 데이터
+        const quizList = [];
+        let currentPoints = 0;      // 유저 포인트
+        let activeQuizId = null;    // 현재 유저가 풀고 있는 문제의 ID
+
+        const tempAddQuizInTodoButton = document.getElementById('tempAddQuizInTodoButton')
+
+        const tabList = document.querySelectorAll('.tab');
+
+        // 모달 제어 함수들
+        openModalBtn.addEventListener('click', () => createModalOverlay.classList.add('active'));
+        quizTabBtn.addEventListener('click', () => activateTab(quizContainer));
+        todoTabBtn.addEventListener('click', () => activateTab(todoContainer));
+
+        const activateTab = (selectedTab) => {
+            tabList.forEach((currentContainer) => {
+                if (currentContainer.id === selectedTab.id) {
+                    currentContainer.classList.add('enabled');
+                    currentContainer.classList.remove('disabled');
+                }
+                else {
+                    currentContainer.classList.add('disabled');
+                    currentContainer.classList.remove('enabled');
+                }
+            });
+        };
+
+        const closeCreateModal = () => {
+            createModalOverlay.classList.remove('active');
+            quizForm.reset();
+        };
+        closeCreateModalBtn.addEventListener('click', closeCreateModal);
+
+        const closeSolveModal = () => {
+            solveModalOverlay.classList.remove('active');
+            solveForm.reset();
+            activeQuizId = null;
+        };
+        closeSolveModalBtn.addEventListener('click', closeSolveModal);
+
+        // 오버레이 외곽 클릭 시 닫기 기본 처리
+        createModalOverlay.addEventListener('click', (e) => { if (e.target === createModalOverlay) closeCreateModal(); });
+        solveModalOverlay.addEventListener('click', (e) => { if (e.target === solveModalOverlay) closeSolveModal(); });
+
+
+        // ------------------ 퀴즈 목록 화면 렌더링 함수 ------------------
+        const renderQuizList = () => {
+            quizListContainer.innerHTML = '';
+
+            if (quizList.length === 0) {
+                quizListContainer.innerHTML = `<div class="empty-message">아직 만들어진 퀴즈가 없습니다. 첫 번째 문제를 생성해 보세요!</div>`;
+                return;
+            }
+
+            quizList.forEach((quiz, index) => {
+                const quizCard = document.createElement('div');
+                quizCard.classList.add('quiz-card');
+
+                // 각 카드 카드를 클릭하면 해당 문제를 풀 수 있도록 이벤트 연결
+                quizCard.addEventListener('click', () => openSolveModal(quiz.id));
+
+                quizCard.innerHTML = `
+                    <div class="quiz-info">
+                        <span class="quiz-badge">Q${index + 1}</span>
+                        <span class="quiz-reward-tag">💎 ${quiz.reward} P</span>
+                    </div>
+                    <div class="quiz-question">${escapeHtml(quiz.question)}</div>
+                    <div class="quiz-admin-hint">(관리자 확인용 정답: ${escapeHtml(quiz.answer)})</div>
+                `;
+
+                quizListContainer.appendChild(quizCard);
+            });
+        };
+
+        // ------------------ 퀴즈 풀기 모달 열기 ------------------
+        const openSolveModal = (quizId) => {
+            // 클릭한 카드의 고유 고유 ID를 바탕으로 배열에서 퀴즈 데이터 매칭
+            const targetQuiz = quizList.find(quiz => quiz.id === quizId);
+            if (!targetQuiz) return;
+
+            activeQuizId = quizId; // 현재 활성화된 퀴즈 ID 저장
+
+            // 모달 안의 텍스트를 클릭한 질문으로 교체
+            solveQuestionContainer.textContent = `[보상 포인트: ${targetQuiz.reward}P]\n\n${targetQuiz.question}`;
+
+            // 풀기 팝업 활성화
+            solveModalOverlay.classList.add('active');
+        };
+
+        // 보안용 방어코드(XSS 방지) 함수
+        const escapeHtml = (text) => {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
+        // 1. 퀴즈 생성 폼 제출
+        quizForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const question = document.getElementById('quizQuestion').value;
+            const answer = document.getElementById('quizAnswer').value;
+            const reward = parseInt(document.getElementById('quizReward').value) || 0;
+
+            const newQuiz = {
+                id: Date.now(),
+                question: question,
+                answer: answer,
+                reward: reward
+            };
+
+            quizList.push(newQuiz);
+            renderQuizList();
+            closeCreateModal();
+        });
+
+        // 2. 퀴즈 정답 풀기 제출 및 채점 처리
+        solveForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // 현재 유저가 도전 중인 퀴즈 객체 가져오기
+            const currentQuiz = quizList.find(quiz => quiz.id === activeQuizId);
+            if (!currentQuiz) return;
+
+            const inputAnswer = userAnswerInput.value.trim(); // 앞뒤 공백 제거
+            const realAnswer = currentQuiz.answer.trim();
+
+            // 대소문자나 공백으로 인한 억울한 오답을 줄이기 위해 일치 여부 검사
+            if (inputAnswer.toLowerCase() === realAnswer.toLowerCase()) {
+                // [정답인 경우]
+                currentPoints += currentQuiz.reward; // 포인트 가산
+                userPointsDisplay.textContent = currentPoints; // 우상단 UI 업데이트
+
+                alert(`🎉 정답입니다!\n\n축하합니다! [${currentQuiz.reward}P]를 획득하여 현재 총 [${currentPoints}P]가 되었습니다.`);
+                closeSolveModal();
+            } else {
+                // [오답인 경우]
+                alert(`❌ 틀렸습니다!\n\n다시 한 번 차근차근 생각해 보세요!`);
+            }
+        });
+
+        // 1. 새로운 할 일 추가 이벤트
+        todoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const todoText = todoInput.value.trim();
+            if (!todoText) return;
+
+            // 데이터 객체 생성
+            const newTodo = {
+                id: Date.now(), // 고유 ID
+                text: todoText,
+                type: 'todo'
+            };
+
+            todoList.push(newTodo);
+            renderTodoList();
+            todoInput.value = ''; // 입력창 초기화
+        });
+
+        // 2. 투두리스트 화면 렌더링 함수
+        const renderTodoList = () => {
+            todoListContainer.innerHTML = '';
+
+            if (todoList.length === 0) {
+                todoListContainer.innerHTML = `<div class="empty-message">할 일이 없습니다. 새로운 할 일을 등록해 보세요!</div>`;
+                return;
+            }
+
+            todoList.forEach((todo) => {
+                if (todo.type === 'todo') {
+                    const todoCard = document.createElement('div');
+                    todoCard.classList.add('todo-item');
+                    todoCard.setAttribute('draggable', 'true'); // 드래그 가능하게 설정
+                    todoCard.dataset.id = todo.id; // 데이터 ID 저장
+
+                    todoCard.innerHTML = `<span class="todo-text">${escapeHtml(todo.text)}</span>`;
+
+                    // --- 드래그앤드롭 이벤트 바인딩 ---
+                    // 드래그 시작할 때 (.dragging 클래스 부여)
+                    todoCard.addEventListener('dragstart', () => {
+                        todoCard.classList.add('dragging');
+                    });
+
+                    // 드래그가 끝날 때 (클래스 제거 및 최종 데이터 순서 동기화)
+                    todoCard.addEventListener('dragend', () => {
+                        todoCard.classList.remove('dragging');
+                        syncTodoOrderData(); // 변경된 화면 순서를 배열 데이터에 저장
+                    });
+
+                    todoListContainer.appendChild(todoCard);
+                }
+                else if (todo.type === 'quiz') {
+                    const quizCard = document.createElement('div');
+                    quizCard.classList.add('quiz-item');
+                    quizCard.dataset.id = todo.id;
+                    quizCard.innerHTML = `<span class="quiz-text">깜짝 퀴즈! ${escapeHtml(todo.text)}</span>`;
+                    quizCard.addEventListener('click', () => openSolveModal(todo.originQuizId));
+                    todoListContainer.appendChild(quizCard);
+                }
+            });
+        };
+
+        // 3. 자석 효과 구현 (드래그 중인 카드를 실시간 새치기 정렬)
+        todoListContainer.addEventListener('dragover', (e) => {
+            e.preventDefault(); // 드롭 허용을 위해 필수
+
+            const draggingCard = document.querySelector('.todo-item.dragging');
+            if (!draggingCard) return;
+
+            // 드래그 중이 아닌 나머지 카드들만 모으기
+            const siblings = [...todoListContainer.querySelectorAll('.todo-item:not(.dragging)')];
+
+            // 마우스 커서와 가장 가까운 카드 찾기
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                const offset = e.clientY - box.top - box.height / 2; // 중심점 계산
+                return offset < 0;
+            });
+
+            // 실시간으로 DOM 정렬 바꾸기 (자석 효과)
+            if (nextSibling) {
+                todoListContainer.insertBefore(draggingCard, nextSibling);
+            } else {
+                todoListContainer.appendChild(draggingCard);
+            }
+        });
+
+        // 4. 중요: 화면 정렬이 바뀐 후 실제 자바스크립트 배열 데이터의 순서도 동기화하는 함수
+        const syncTodoOrderData = () => {
+            const currentRenderedCards = [...todoListContainer.querySelectorAll('.todo-item')];
+
+            // 현재 화면에 배치된 순서대로 ID를 읽어서 기존 배열을 재정렬합니다.
+            const newOrderedList = currentRenderedCards.map(card => {
+                const cardId = parseInt(card.dataset.id);
+                return todoList.find(todo => todo.id === cardId);
+            });
+
+            // 기존 배열 비우고 새 순서로 채워넣기
+            todoList.length = 0;
+            todoList.push(...newOrderedList);
+
+            console.log("현재 투두 데이터 배열 순서:", todoList); // 개발자 도구 콘솔에서 확인 가능
+        };
+
+        // 기습 퀴즈를 하나 무작위로 추출하는 함수
+        const getRandomQuiz = () => {
+            if (quizList.length === 0) {
+                alert("먼저 '퀴즈 게임' 탭에서 문제를 최소 1개 이상 생성해 주세요!");
+                return null;
+            }
+
+            // 1. 랜덤 인덱스 번호 뽑기
+            const randomIndex = Math.floor(Math.random() * quizList.length);
+
+            // 2. 배열에서 해당 인덱스의 퀴즈 객체 쏙 빼오기
+            const selectedQuiz = quizList[randomIndex];
+
+            return selectedQuiz;
+        };
+
+        tempAddQuizInTodoButton.addEventListener('click', () => {
+            const randomQuiz = getRandomQuiz();
+            if (!randomQuiz) {
+                return;
+            }
+            const newQuiz = {
+                id: Date.now(),
+                originQuizId: randomQuiz.id, // 고유 ID
+                text: randomQuiz.question,
+                type: 'quiz'
+            };
+            todoList.unshift(newQuiz);
+            renderTodoList();
+        });
+
+        // 페이지 최초 로드 시 빈 메시지 출력을 위해 초기 실행
+        renderTodoList();
+    </script>
+</body>
+
+</html>
