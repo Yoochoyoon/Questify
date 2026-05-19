@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>퀘스티파이</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="quest-window">
+
+        <div class="quest-tabs">
+
+            <button id="tabOnGoing" class="tab-btn">진행중</button>
+            <button id="tabClear" class="tab-btn">클리어</button>
+            <button id="tabFail" class="tab-btn">실패</button>
+        </div>
+
+        <hr> <div class="quest-content">
+            
+            <div class="input-container">
+                <input type="text" id="questTitle" placeholder="퀘스트 이름을 입력하세요">
+
+                <select id="questType">
+                    <option value="일반">일반</option>
+                    <option value="타이머">타이머</option>
+                    <option value="문제">문제</option>
+                </select>
+
+                <select id="questLevel">
+                    <option value="쉬움">쉬움 (10 EXP)</option>
+                    <option value="보통">보통 (30 EXP)</option>
+                    <option value="어려움">어려움 (50 EXP)</option>
+                </select>
+
+                <button id="createBtn">생성</button>
+            </div>
+
+            <div id="questList">
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    
+</body>
+</html>

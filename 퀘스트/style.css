@@ -1,0 +1,25 @@
+.quest-window {
+    border: 3px solid #555;
+    padding: 20px;
+    width: 500px;
+    margin: 50px auto;
+}
+
+.quest-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#questList {
+    border: 2px dashed #999;
+    min-height: 150px;
+    padding: 15px;
+
+}
