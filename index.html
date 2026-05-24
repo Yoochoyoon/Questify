@@ -14,17 +14,14 @@
         <!-- 좌측 영역: 실제 플레이/진행 화면. 모바일에서는 상단, PC에서는 왼쪽에 위치 -->
         <div id="left-panel" class="h-[45%] md:h-full w-full md:w-[60%] relative overflow-hidden shrink-0 border-[4px] border-black bg-white transition-all duration-300">
             <!-- 좌측 패널 상단: 모바일에서 우측 메뉴를 숨기면 이 영역이 전체 높이로 확장됨 -->
-            
             <button id="mobile-toggle-btn" class="md:hidden absolute top-2 right-2 px-3 py-1.5 bg-white border-[2px] border-black rounded-lg z-40 shadow-sm font-bold text-xs hover:bg-gray-100 active:scale-95 transition-all">
                 메뉴 숨기기
             </button>
 
             <div id="game-screen" class="absolute inset-0 bg-white w-full h-full z-10">
                 <!-- 기본 메인 화면: 오늘의 목표, 유저 정보, 캐릭터 표시가 보이는 시작 상태 -->
-                
                 <div class="absolute top-0 left-0 w-full z-20 flex flex-col p-2 md:p-3 lg:p-4 gap-2 md:gap-3 pointer-events-none">
                     <!-- 화면 상단 고정 UI: 오늘의 목표 진행도와 플레이어 정보가 표시되는 상태창 -->
-                    
                     <div class="pointer-events-auto">
                         <h2 class="text-black font-bold text-sm md:text-lg lg:text-xl ml-[2.5%]">오늘의 목표</h2>
                         <div class="w-full mx-auto md:w-[95%] max-w-full h-6 md:h-8 bg-white border-[2px] border-black relative mt-1">
@@ -49,7 +46,6 @@
 
             <div id="timer-screen" class="absolute inset-0 bg-white w-full h-full z-30 hidden overflow-hidden">
                 <!-- 타이머 전용 화면: 메인 화면 위에 겹쳐지는 전체 오버레이. 타이머 조작에만 집중하는 화면 -->
-                
                 <button id="close-timer-btn" class="absolute top-2 left-2 md:top-4 md:left-4 w-8 h-8 md:w-10 md:h-10 bg-white rounded-full border-[2px] md:border-[3px] border-black flex justify-center items-center z-40 hover:bg-gray-100 active:scale-95 transition-all shadow-sm cursor-pointer">
                     <span class="text-black font-bold text-sm md:text-base mb-0.5">X</span>
                 </button>
@@ -72,17 +68,25 @@
                         </div>
 
                         <div class="absolute -bottom-6 md:bottom-4 left-1/2 transform -translate-x-1/2 w-[95%] md:w-[85%] max-w-[700px] bg-gray-100 border-[4px] md:border-[5px] border-black rounded-xl p-4 md:p-6 lg:p-8 shadow-sm z-20 pointer-events-auto flex flex-col gap-3 md:gap-5 shrink-0">
-                            <div class="w-full bg-white border-[3px] md:border-[4px] border-black rounded-lg py-4 md:py-8 lg:py-10 flex justify-center items-center shadow-sm">
-                                <span class="text-black text-5xl md:text-7xl lg:text-[6.5rem] font-black tracking-wider leading-none">00:00:00</span>
+                            <!-- 타이머 값 표시: 사용자가 직접 편집할 수 있는 핵심 입력창 -->
+                            
+                            <div class="w-full bg-white border-[3px] md:border-[4px] border-black rounded-lg py-4 md:py-8 lg:py-10 flex justify-center items-center shadow-sm relative overflow-hidden">
+                                <input id="timer-display" type="text" value="00:00:00" inputmode="numeric" maxlength="8" class="text-black text-5xl md:text-7xl lg:text-[6.5rem] font-black tracking-wider leading-none text-center bg-transparent outline-none w-full z-10">
                             </div>
+                            
                             <div class="w-full flex justify-center gap-4 md:gap-8 px-1 md:px-8">
-                                <button class="bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all">1h</button>
-                                <button class="bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all">30m</button>
-                                <button class="bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all">1s</button>
+                                <!-- 프리셋 시간 추가 버튼: 자주 쓰는 시간을 빠르게 누적하는 기능 -->
+                                <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="3600">+ 1h</button>
+                                <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="1800">+ 30m</button>
+                                <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="300">+ 5m</button>
                             </div>
-                            <div class="w-full flex justify-center mt-1 md:mt-2">
-                                <button class="bg-gray-200 border-[3px] md:border-[4px] border-black rounded-lg w-[60%] md:w-[40%] py-2 md:py-3 lg:py-4 text-black font-black text-lg md:text-xl lg:text-2xl shadow-sm hover:bg-gray-300 active:scale-95 transition-all">시작</button>
+                            
+                            <div class="w-full flex justify-center gap-3 mt-1 md:mt-2">
+                                <!-- 타이머 제어 버튼: 초기화와 시작/일시정지를 분리해 조작 -->
+                                <button id="reset-timer-btn" class="bg-white border-[3px] md:border-[4px] border-black rounded-lg w-[25%] md:w-[20%] py-2 md:py-3 lg:py-4 text-black font-black text-sm md:text-lg lg:text-xl shadow-sm hover:bg-gray-100 active:scale-95 transition-all">초기화</button>
+                                <button id="start-timer-btn" class="bg-gray-200 border-[3px] md:border-[4px] border-black rounded-lg w-[50%] md:w-[40%] py-2 md:py-3 lg:py-4 text-black font-black text-lg md:text-xl lg:text-2xl shadow-sm hover:bg-gray-300 active:scale-95 transition-all">시작</button>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -90,7 +94,6 @@
 
             <div id="modal-overlay" class="absolute inset-0 bg-gray-900/60 z-50 hidden justify-center items-center p-4 md:p-6">
                 <!-- 문제 생성/풀이 팝업 오버레이: 배경을 어둡게 덮고 중앙 모달만 띄우는 영역 -->
-                
                 <div id="create-modal" class="bg-white w-full max-w-[95%] md:max-w-[85%] h-[90%] border-[4px] border-black rounded-xl p-3 md:p-5 flex flex-col gap-3 relative hidden shadow-xl">
                     <button class="close-modal-btn absolute -top-3 -left-3 md:-top-4 md:-left-4 w-7 h-7 md:w-9 md:h-9 bg-white rounded-full border-[3px] border-black flex justify-center items-center text-black font-bold hover:scale-105 active:scale-95 transition-transform z-50">X</button>
                     <input type="text" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner" placeholder="문제제목을입력해주세요. 스물일곱자까지입력해주세요.">
@@ -117,7 +120,6 @@
 
         <div id="right-panel-wrapper" class="flex-1 md:h-full w-full md:w-[40%] flex flex-col relative overflow-hidden border-[4px] border-black bg-gray-100 transition-colors duration-200">
             <!-- 우측 메뉴 영역: 일일퀘스트와 문제저장소를 탭으로 전환하는 보조 패널 -->
-            
             <div id="panel-quest" class="flex-1 flex flex-col overflow-hidden">
                 <!-- 우측 패널 기본 탭: 오늘 처리할 일일퀘스트 목록이 표시되는 화면 -->
                 <div class="pt-3 md:pt-[4%] pb-2 md:pb-[3%] shrink-0">
@@ -323,6 +325,173 @@
                 modalOverlay.classList.add('hidden');
                 modalOverlay.classList.remove('flex');
             });
+        });
+
+        // ------------------------------------------------------------------
+        // [새로 추가된 기능] 타이머 코어 로직 및 마스킹 입력 (Masked Input) 제어
+        // ------------------------------------------------------------------
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerBtn = document.getElementById('start-timer-btn');
+        const resetTimerBtn = document.getElementById('reset-timer-btn');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        
+        // [새로 추가된 기능] 타이머 상태 관리용 변수 모음
+        let totalSeconds = 0;
+        let timerInterval = null;
+        let timerRunning = false;
+        let timerPaused = false;
+        
+        // [새로 추가된 기능] HH:MM:SS 포맷에서 콜론(:)을 제외한 순수 숫자가 위치하는 문자열 인덱스 매핑 상수
+        const DIGIT_POSITIONS = [0, 1, 3, 4, 6, 7];
+
+        // [새로 추가된 기능] 초(Seconds)를 입력받아 HH:MM:SS 문자열로 포맷팅하는 함수
+        function formatTime(seconds) {
+            const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(seconds % 60).padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        // [새로 추가된 기능] 사용자가 입력한 6자리 숫자 배열을 초(Seconds)로 역산하는 함수
+        function totalSecondsFromDigits(digits) {
+            const h = Number(`${digits[0]}${digits[1]}`) || 0;
+            const m = Number(`${digits[2]}${digits[3]}`) || 0;
+            const s = Number(`${digits[4]}${digits[5]}`) || 0;
+            return (h * 3600) + (m * 60) + s;
+        }
+
+        // [새로 추가된 기능] 계산된 시간을 Input UI에 반영
+        function updateDisplays() {
+            timerDisplay.value = formatTime(totalSeconds);
+        }
+
+        // [새로 추가된 기능] 타이머 실행 코어 로직
+        function startTimer() {
+            if (totalSeconds <= 0) return;
+            
+            timerRunning = true;
+            timerPaused = false;
+            startTimerBtn.innerText = '일시정지';
+            timerDisplay.disabled = true; // 타이머 진행 중에는 수동 입력 방지
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (timerPaused) return; // 일시정지 상태면 초 차감 무시
+                
+                if (totalSeconds > 0) {
+                    totalSeconds--;
+                    updateDisplays();
+                }
+                
+                if (totalSeconds <= 0) {
+                    totalSeconds = 0;
+                    updateDisplays();
+                    stopTimer();
+                    alert('타이머가 종료되었습니다!'); // 실제 구현시에는 모달이나 알림으로 변경 권장
+                }
+            }, 1000);
+        }
+
+        // [새로 추가된 기능] 타이머 중지 및 권한 복구 로직
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            timerRunning = false;
+            timerPaused = false;
+            startTimerBtn.innerText = '시작';
+            timerDisplay.disabled = false; // 수동 입력 권한 복구
+        }
+
+        // [새로 추가된 기능] 타이머 시작 및 일시정지 버튼 이벤트
+        startTimerBtn.addEventListener('click', () => {
+            if (timerRunning) {
+                timerPaused = !timerPaused;
+                startTimerBtn.innerText = timerPaused ? '계속' : '일시정지';
+            } else {
+                startTimer();
+            }
+        });
+
+        // [새로 추가된 기능] 타이머 완전 초기화 버튼 이벤트
+        resetTimerBtn.addEventListener('click', () => {
+            stopTimer();
+            totalSeconds = 0;
+            updateDisplays();
+        });
+
+        // [새로 추가된 기능] 프리셋 버튼(시간 빠른 추가) 클릭 이벤트 (+1h, +30m, +5m)
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (timerRunning && !timerPaused) return; // 타이머 실행 중에는 추가 막기
+                const addTime = parseInt(btn.getAttribute('data-time'));
+                totalSeconds += addTime;
+                if(totalSeconds > 359999) totalSeconds = 359999; // 99:59:59 초과 방지
+                updateDisplays();
+            });
+        });
+
+        // [새로 추가된 기능] 사용자 직접 입력을 위한 마스킹(Masked Input) 방향키 및 숫자 치환 로직
+        timerDisplay.addEventListener('keydown', (e) => {
+            if (timerRunning) {
+                e.preventDefault();
+                return;
+            }
+
+            // 방향키 및 특수 이동키는 허용
+            if (['ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(e.key)) return;
+
+            e.preventDefault(); // 브라우저의 기본 타이핑 동작 강제 차단
+
+            let digits = timerDisplay.value.replace(/:/g, '').split('');
+            const start = timerDisplay.selectionStart;
+            
+            // 현재 마우스/키보드 커서 위치와 가장 가까운 순수 숫자 인덱스를 추적
+            let digitIndex = DIGIT_POSITIONS.findIndex(pos => pos >= start);
+            if (digitIndex === -1) digitIndex = 5;
+
+            if (/\d/.test(e.key)) {
+                // 일반 숫자 입력 시 덮어쓰기 로직
+                digits[digitIndex] = e.key;
+                totalSeconds = totalSecondsFromDigits(digits);
+                updateDisplays();
+                
+                // 입력 직후 다음 숫자 위치로 커서를 자동 이동
+                let nextPos = digitIndex < 5 ? DIGIT_POSITIONS[digitIndex + 1] : DIGIT_POSITIONS[5] + 1;
+                timerDisplay.setSelectionRange(nextPos, nextPos);
+                
+            } else if (e.key === 'Backspace') {
+                // 뒤로가기(백스페이스) 시 앞자리 숫자를 0으로 치환하고 커서를 당김
+                let targetIdx = DIGIT_POSITIONS.findIndex(pos => pos >= start) - 1;
+                if (start === timerDisplay.value.length) targetIdx = 5;
+                
+                if (targetIdx >= 0) {
+                    digits[targetIdx] = '0';
+                    totalSeconds = totalSecondsFromDigits(digits);
+                    updateDisplays();
+                    
+                    let nextPos = DIGIT_POSITIONS[targetIdx];
+                    timerDisplay.setSelectionRange(nextPos, nextPos);
+                }
+            } else if (e.key === 'Delete') {
+                // Delete 키 사용 시 현재 커서 위치의 숫자를 0으로 치환하고 커서 위치 고정
+                 let targetIdx = DIGIT_POSITIONS.findIndex(pos => pos >= start);
+                 if(targetIdx !== -1) {
+                    digits[targetIdx] = '0';
+                    totalSeconds = totalSecondsFromDigits(digits);
+                    updateDisplays();
+                    timerDisplay.setSelectionRange(start, start);
+                 }
+            }
+        });
+        
+        // [새로 추가된 기능] Input UI 클릭 시 콜론(:) 문자 위에서 커서가 깜빡이지 않도록 바로 옆 숫자로 강제 보정
+        timerDisplay.addEventListener('click', (e) => {
+            const start = timerDisplay.selectionStart;
+            if (!DIGIT_POSITIONS.includes(start) && start !== 8) {
+                const nextPos = DIGIT_POSITIONS.find(pos => pos > start) || 8;
+                timerDisplay.setSelectionRange(nextPos-1, nextPos-1);
+            }
         });
     </script>
 </body>
