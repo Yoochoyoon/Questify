@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quest Log Component</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="quest-container">
+  <h2>≡ QUEST LOG ≡</h2>
+  
+  <div class="section-title">■ 진행중 (끌어서 순서 변경 가능)</div>
+  <div id="quest-list-active"></div>
+  
+  <div class="section-title">■ 완료</div>
+  <div id="quest-list-completed"></div>
+  
+  <button id="add-quest-btn" onclick="addQuest()">+ 퀘스트 추가</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

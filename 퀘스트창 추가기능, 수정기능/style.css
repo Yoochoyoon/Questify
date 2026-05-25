@@ -1,0 +1,168 @@
+/* 기본 스타일 초기화 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 퀘스트 창 기본 박스 */
+#quest-container {
+  width: 100%;
+  max-width: 400px;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  padding: 15px;
+}
+
+h2 {
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #333;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 15px 0 8px 0;
+  color: #555;
+}
+
+/* 퀘스트 아이템 카드 */
+.quest-item {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-bottom: 8px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+/* 진행중인 퀘스트에 마우스 올리면 잡을 수 있는 커서 표시 */
+#quest-list-active .quest-item {
+  cursor: grab;
+}
+#quest-list-active .quest-item:active {
+  cursor: grabbing;
+}
+
+/* 드래그 중인 아이템 시각 효과 */
+.quest-item.dragging {
+  opacity: 0.4;
+  background-color: #ebebeb;
+  border: 1px dashed #999;
+}
+
+/* 완료된 상태 스타일 */
+.quest-item.completed {
+  background-color: #eaeaea;
+  opacity: 0.6;
+}
+.quest-item.completed .quest-name-text {
+  text-decoration: line-through;
+}
+
+/* 텍스트 및 수정 인풋 구역 공통 여백 */
+.quest-text-block {
+  padding-right: 40px; /* 더보기 점 버튼과 겹치지 않도록 공간 확보 */
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.quest-edit-input {
+  width: 100%;
+  font-size: 13px;
+  padding: 2px 4px;
+  border: 1px solid #999;
+}
+
+/* 하단 액션 버튼 그룹 (진행중에만 나타남) */
+.quest-action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.quest-box-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+.quest-box-btn:hover {
+  background: #f0f0f0;
+}
+
+/* 우측 상단 더보기 (◦◦◦) 버튼 및 메뉴 */
+.quest-opt-trigger {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  color: #777;
+}
+
+.quest-opt-menu {
+  display: none;
+  position: absolute;
+  top: 26px;
+  right: 8px;
+  background: #fff;
+  border: 1px solid #999;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.quest-opt-menu.show {
+  display: block;
+}
+
+.quest-opt-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 11px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+.quest-opt-item:last-child {
+  border-bottom: none;
+}
+.quest-opt-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* 추가 버튼 */
+#add-quest-btn {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin-top: 15px;
+  background: #fff;
+  border: 1px dashed #999;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+}
+#add-quest-btn:hover {
+  background: #f9f9f9;
+}
