@@ -165,6 +165,13 @@
             const quizzes = todoList.filter(item => item.type === 'quiz');
             const todos = todoList.filter(item => item.type === 'todo');
 
+            // [추가] 완료된 항목은 맨 아래로 보내는 정렬 로직
+            todos.sort((a, b) => {
+                if (a.status === 'clear' && b.status !== 'clear') return 1;  // a가 클리어면 뒤로
+                if (a.status !== 'clear' && b.status === 'clear') return -1; // b가 클리어면 앞으로
+                return 0;                                                    // 나머지는 순서 유지
+            });
+
             // 1. 기습 퀴즈 먼저 렌더링 (드래그 불가)
             quizzes.forEach(item => {
                 const card = document.createElement('div');
@@ -217,7 +224,7 @@
                     card.addEventListener('touchstart', handleTouchStart, { passive: false });
                     card.addEventListener('touchmove', handleTouchMove, { passive: false });
                     card.addEventListener('touchend', handleTouchEnd);
-                    container.prepend(card);
+                    container.appendChild(card);
                 }
                 
             });
