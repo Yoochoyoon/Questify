@@ -5,20 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Questify</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 모바일 메뉴 숨김 처리 시 맨 윗줄만 남기기 위한 스타일 */
+        @media (max-width: 767px) {
+            .mobile-collapsed {
+                flex: none !important;
+                height: 56px !important;
+                min-height: 56px !important;
+            }
+            /* 축소 시 하단 탭 바 숨기기 */
+            .mobile-collapsed #bottom-tab-bar {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-300 w-screen h-[100dvh] overflow-hidden flex justify-center items-center font-sans select-none md:p-0">
 
-    <!-- 전체 앱 레이아웃: 좌측 게임 영역 + 우측 관리 패널 -->
+    <!-- Questify 메인 앱 컨테이너 -->
+
     <div class="flex flex-col md:flex-row w-full h-full md:max-h-[99%] md:max-w-[calc(100vh*1.6666)] md:aspect-[5/3] bg-white md:p-1 gap-1 md:gap-1.5 md:shadow-2xl overflow-hidden relative border-[3px] border-black">
 
-        <!-- 좌측 메인 플레이 화면 -->
+                <!-- 좌측 메인 플레이 화면 / 캐릭터 영역 -->
         <div id="left-panel" class="h-[45%] md:h-full w-full md:w-[60%] relative overflow-hidden shrink-0 border-[4px] border-black bg-white transition-all duration-300">
-                        <!-- 모바일 전용: 우측 메뉴 패널 토글 버튼 -->
-            <button id="mobile-toggle-btn" class="md:hidden absolute top-2 right-2 px-3 py-1.5 bg-white border-[2px] border-black rounded-lg z-40 shadow-sm font-bold text-xs hover:bg-gray-100 active:scale-95 transition-all">
-                메뉴 숨기기
-            </button>
-
-                        <!-- 메인 게임 화면: 목표, 프로필, 캐릭터가 표시되는 기본 상태 -->
+                        <!-- 기본 게임 화면: 진행도 / 프로필 / 캐릭터 표시 -->
             <div id="game-screen" class="absolute inset-0 bg-white w-full h-full z-10 overflow-hidden relative">
                 <div class="absolute top-0 left-0 w-full z-30 flex flex-col p-2 md:p-3 lg:p-4 gap-2 md:gap-3 pointer-events-none">
                     <div class="pointer-events-auto">
@@ -42,7 +52,7 @@
                 </div>
             </div>
 
-                        <!-- 타이머 전용 전체 화면 오버레이 -->
+                        <!-- 집중 타이머 전체 화면 오버레이 -->
             <div id="timer-screen" class="absolute inset-0 bg-white w-full h-full z-30 hidden overflow-hidden">
                 <button id="close-timer-btn" class="absolute top-2 left-2 md:top-4 md:left-4 w-8 h-8 md:w-10 md:h-10 bg-white rounded-full border-[2px] md:border-[3px] border-black flex justify-center items-center z-40 hover:bg-gray-100 active:scale-95 transition-all shadow-sm cursor-pointer">
                     <span class="text-black font-bold text-sm md:text-base mb-0.5">X</span>
@@ -80,11 +90,11 @@
                 </div>
             </div>
 
-                        <!-- 문제 생성 / 풀이 / 슬롯 관리 모달 오버레이 -->
+                        <!-- 문제 생성 / 풀이 / 슬롯 관리용 공통 모달 레이어 -->
             <div id="modal-overlay" class="absolute inset-0 bg-gray-900/60 z-50 hidden justify-center items-center p-4 md:p-6">
                 <div id="create-modal" class="modal-content bg-white w-full max-w-[95%] md:max-w-[85%] h-[90%] border-[4px] border-black rounded-xl p-3 md:p-5 flex flex-col gap-3 relative hidden shadow-xl">
                     <button class="close-modal-btn absolute -top-3 -left-3 md:-top-4 md:-left-4 w-7 h-7 md:w-9 md:h-9 bg-white rounded-full border-[3px] border-black flex justify-center items-center text-black font-bold hover:scale-105 active:scale-95 transition-transform z-50">X</button>
-                    <input id="input-quiz-title" type="text" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner" placeholder="문제 제목을 입력해주세요.">
+                    <input id="input-quiz-title" type="text" maxlength="27" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner" placeholder="문제 제목을 입력해주세요. (최대 27자)">
                     <textarea id="input-quiz-content" class="w-full flex-1 bg-gray-50 border-[2.5px] border-gray-400 rounded-xl px-4 py-3 text-sm md:text-base font-bold text-black outline-none resize-none placeholder-gray-500 shadow-inner" placeholder="문제를 적어주세요."></textarea>
                     <input id="input-quiz-answer" type="text" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner mt-1" placeholder="정답을 적어주세요.">
                     <button id="btn-submit-create" class="bg-gray-200 border-[3px] border-black rounded-lg py-1.5 md:py-2 px-10 text-black font-black text-base md:text-xl shadow-sm hover:bg-gray-300 active:scale-95 transition-all self-center mt-2">제작</button>
@@ -104,12 +114,11 @@
                     </div>
                 </div>
 
-                                <!-- 신규 기능: 캐릭터 슬롯 / 유니온 관리 모달 -->
+                                <!-- 신규 기능: 유니온 슬롯 / 멀티 캐릭터 관리 모달 -->
                 <div id="slot-modal" class="modal-content bg-white w-full max-w-[95%] md:max-w-[85%] h-[90%] border-[4px] border-black rounded-xl p-4 md:p-6 flex flex-col gap-4 relative hidden shadow-xl">
                     <button class="close-modal-btn absolute -top-3 -left-3 md:-top-4 md:-left-4 w-7 h-7 md:w-9 md:h-9 bg-white rounded-full border-[3px] border-black flex justify-center items-center text-black font-bold hover:scale-105 active:scale-95 transition-transform z-50">X</button>
                     <h2 id="union-level-display" class="text-xl md:text-2xl font-black text-center border-b-2 border-black pb-2">전체 유니온 Lv.0</h2>
-                    <div id="slot-manager-container" class="flex-1 overflow-y-auto flex flex-col gap-3 px-1 pb-4">
-                        </div>
+                    <div id="slot-manager-container" class="flex-1 overflow-y-auto flex flex-col gap-3 px-1 pb-4"></div>
                     <div class="flex gap-2 w-full mt-auto shrink-0">
                         <button id="btn-reset-all-data" class="bg-red-500 border-[3px] border-black rounded-lg py-3 px-4 text-white font-black text-xs md:text-sm shadow-sm hover:bg-red-600 active:scale-95 transition-all shrink-0">전체 데이터 삭제</button>
                         <button id="btn-add-new-character" class="flex-1 bg-gray-200 border-[3px] border-black rounded-lg py-3 text-black font-black text-base md:text-lg shadow-sm hover:bg-gray-300 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100 shrink-0">✨ 새 캐릭터 추가</button>
@@ -118,23 +127,26 @@
             </div>
         </div>
 
-                <!-- 우측 관리 패널: 퀘스트 / 저장소 / 타이머 진입 UI -->
-        <div id="right-panel-wrapper" class="flex-1 md:h-full w-full md:w-[40%] flex flex-col relative overflow-hidden border-[4px] border-black bg-gray-100 transition-colors duration-200">
+                <!-- 우측 관리 패널: 퀘스트 / 저장소 / 메뉴 -->
+        <div id="right-panel-wrapper" class="flex-1 md:h-full w-full md:w-[40%] flex flex-col relative overflow-hidden border-[4px] border-black bg-gray-100 transition-all duration-300">
+                        <!-- 신규 기능: 모바일 우측 패널 접기/펼치기 버튼 -->
+            <button id="mobile-toggle-btn" class="md:hidden absolute top-3 right-3 w-8 h-8 flex justify-center items-center bg-white border-[2px] border-black rounded z-40 shadow-sm font-bold text-xl hover:bg-gray-100 active:scale-95 transition-all">
+                ☰
+            </button>
+
+                        <!-- 일일 퀘스트 탭 -->
             <div id="panel-quest" class="flex-1 flex flex-col overflow-hidden">
                 <div class="pt-3 md:pt-[4%] pb-2 md:pb-[3%] shrink-0 flex flex-col gap-2">
                     <h1 class="text-black text-xl md:text-3xl lg:text-4xl font-black text-center tracking-widest">일일퀘스트</h1>
                     <div class="flex justify-center gap-2 px-2">
-                                                <!-- 신규 기능: 저장된 문제 중 랜덤 기습 퀴즈 생성 -->
                         <button id="btn-trigger-surprise" class="bg-red-100 border-[2px] border-red-400 text-red-700 text-xs md:text-sm font-bold px-3 py-1 rounded shadow-sm hover:bg-red-200 active:scale-95 transition-all">💥 기습 퀴즈</button>
-                                                <!-- 완료된 퀘스트 일괄 삭제 버튼 -->
-                        <button id="btn-clear-completed" class="bg-gray-200 border-[2px] border-gray-400 text-gray-700 text-xs md:text-sm font-bold px-3 py-1 rounded shadow-sm hover:bg-gray-300 active:scale-95 transition-all">🧹 일괄 삭제</button>
                     </div>
                 </div>
                 <div id="quest-list-container" class="flex-1 px-2 md:px-[4%] flex flex-col gap-2 md:gap-[3%] overflow-y-auto pb-16 md:pb-[20%]">
                 </div>
             </div>
 
-                        <!-- 저장된 문제를 다시 풀 수 있는 문제 저장소 탭 -->
+                        <!-- 저장된 문제를 관리하는 문제 저장소 탭 -->
             <div id="panel-storage" class="flex-1 flex flex-col overflow-hidden hidden">
                 <div class="pt-3 md:pt-[4%] pb-2 md:pb-[3%] shrink-0">
                     <h1 class="text-black text-xl md:text-3xl lg:text-4xl font-black text-center tracking-widest">문제저장소</h1>
@@ -143,14 +155,14 @@
                 </div>
             </div>
 
-                        <!-- 타이머 화면을 여는 플로팅 버튼 -->
             <div id="open-timer-btn" class="absolute bottom-12 md:bottom-[15%] right-3 md:right-[5%] w-10 h-10 md:w-[12%] md:aspect-square md:h-auto max-h-[64px] max-w-[64px] min-w-[40px] min-h-[40px] bg-white rounded-full border-[2.5px] md:border-[3px] border-black shadow-sm flex justify-center items-center cursor-pointer hover:scale-105 transition-all z-10">
                 <div class="w-[10%] h-[20%] bg-black absolute top-[15%] rounded-full"></div>
                 <div class="w-[20%] h-[10%] bg-black absolute right-[15%] rounded-full"></div>
                 <div class="absolute -top-[15%] w-[20%] h-[20%] bg-black rounded-sm"></div>
             </div>
 
-            <div class="h-10 md:h-[10%] min-h-[40px] md:min-h-[48px] flex border-t-[3px] border-black w-full mt-auto shrink-0 bg-gray-200">
+                        <!-- 하단 탭 전환 바 -->
+            <div id="bottom-tab-bar" class="h-10 md:h-[10%] min-h-[40px] md:min-h-[48px] flex border-t-[3px] border-black w-full mt-auto shrink-0 bg-gray-200">
                 <div id="tab-quest" class="flex-1 bg-white border-r-[3px] border-black flex justify-center items-center cursor-pointer shadow-sm hover:bg-gray-50 transition-all">
                     <span id="tab-quest-text" class="text-black font-bold text-[2vh] md:text-[2vh] lg:text-[3vh] flex items-center gap-1 md:gap-2">📜 일일퀘스트</span>
                 </div>
@@ -164,7 +176,7 @@
     <script>
     // ============================================================
     // 캐릭터 성장 / XP / 유니온 슬롯 시스템
-    // MVP 신규 기능: 레벨업, 멀티 캐릭터 슬롯, XP 애니메이션
+    // 레벨업 / XP / 슬롯 확장 / 유니온 총합 관리
     // ============================================================
     (function () {
         'use strict';
@@ -172,20 +184,15 @@
         const MAX_SLOTS = 10;
         const STORAGE_KEY = 'questify_player_v2';
         
-                // 퀘스트 완료 시 지급되는 경험치 테이블
-        const XP_REWARDS = {
-            normal: { easy: 5, medium: 12, hard: 25 },
-            challenge: { '30min': 25, '1h': 60, '3h': 200 }, // 3h = 대량의 경험치용
-        };
-
         let state = { characters: [{ level: 1, xp: 0 }], activeSlot: 0 };
         const DOM = {};
 
         function getCurrentChar() { return state.characters[state.activeSlot]; }
+        // 요구 경험치 100 고정으로 변경
+        // 레벨당 요구 경험치 계산
         function getXpRequired(level) {
             if (level >= MAX_LEVEL) return Infinity;
-            const multiplier = Math.min(Math.pow(1.2, Math.floor(level / 5)), 2.0);
-            return Math.floor(60 * multiplier + level * 15);
+            return 100;
         }
         function getUnionLevel() { return state.characters.reduce((sum, char) => sum + char.level, 0); }
 
@@ -270,7 +277,7 @@
             setTimeout(() => el.remove(), 1500);
         }
 
-                // 경험치 획득 및 레벨업 처리 핵심 로직
+        // 경험치 획득 및 자동 레벨업 처리
         function gainXP(amount) {
             const char = getCurrentChar();
             if (char.level >= MAX_LEVEL) { showFloat('만렙! 새 캐릭터를 추가하세요.'); return; }
@@ -287,7 +294,7 @@
             if (DOM.levelEl) { DOM.levelEl.style.animation = 'none'; requestAnimationFrame(() => { DOM.levelEl.style.animation = 'xpLevelPop 0.5s ease'; }); }
         }
 
-                // 만렙 달성 시 졸업 처리 및 신규 슬롯 해금
+        // 만렙 도달 시 졸업 처리 및 신규 슬롯 해금 안내
         function onGraduate() {
             showFloat(`⭐ Lv.${MAX_LEVEL} 졸업!`, true);
             setTimeout(() => showFloat(state.characters.length < MAX_SLOTS ? '새 캐릭터를 추가할 수 있습니다!' : `유니온 Lv.${getUnionLevel()} 달성!`, true), 1000);
@@ -316,14 +323,13 @@
             } catch (e) { console.warn('Init error'); }
         }
 
-                // 외부 UI에서 접근 가능한 전역 Questify API
+        // 외부 UI 및 시스템에서 사용하는 전역 Questify API
         window.Questify = {
-            completeQuest(type, difficulty) { const reward = XP_REWARDS[type]?.[difficulty]; if(reward) gainXP(reward); },
+            gainXP(amount) { gainXP(amount); },
             addSlot, switchSlot, getUnionLevel,
             getCharacters: () => state.characters.map(c => ({ ...c })),
             getActiveChar: () => ({ ...getCurrentChar() }),
             getSlotInfo: () => ({ activeSlot: state.activeSlot, totalSlots: state.characters.length, maxSlots: MAX_SLOTS, canAddSlot: getCurrentChar().level >= MAX_LEVEL && state.characters.length < MAX_SLOTS, unionLevel: getUnionLevel() }),
-            XP_REWARDS,
             reset() { localStorage.removeItem(STORAGE_KEY); state = { characters: [{ level: 1, xp: 0 }], activeSlot: 0 }; updateUI(); }
         };
 
@@ -334,14 +340,16 @@
     <script>
         // ============================================================
         // Todo / Quiz / 저장소 / 기습퀴즈 시스템
+        // 퀘스트 관리 / 문제 생성 / 저장소 / 기습 퀴즈 처리
         // ============================================================
 
-        // --- 1. 앱 전역 변수 및 로컬스토리지 (Todo & Quiz) ---
         const APP_DATA_KEY = 'questify_app_data_v1';
         let todoList = [];
         let quizStorage = [];
         let currentActiveQuiz = null;
-        let pendingMassiveReward = false; // 타이머 완료 후 문제 생성 대기 상태
+        let pendingMassiveReward = false; 
+        // 신규 기능: 문제 수정 모드용 현재 편집 퀴즈 ID
+        let editingQuizId = null; // 수정 중인 퀴즈 식별을 위한 변수 추가
 
         function loadAppData() {
             try {
@@ -360,16 +368,15 @@
             localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage }));
         }
 
-        // --- 2. 뷰 렌더링 엔진 ---
+        // 전체 UI 동기화 렌더링
         function renderAll() {
             renderTodoList();
             renderStorageList();
             updateProgressBar();
-            saveAppData(); // 데이터가 변경될 때마다 자동 저장
+            saveAppData(); 
         }
 
-        // [투두리스트 렌더링]
-        // 일반 퀘스트와 기습 퀴즈를 분리 렌더링
+        // 퀘스트 목록 렌더링 및 드래그 정렬 처리
         function renderTodoList() {
             const container = document.getElementById('quest-list-container');
             container.innerHTML = '';
@@ -377,14 +384,12 @@
             const quizzes = todoList.filter(item => item.type === 'quiz');
             const todos = todoList.filter(item => item.type === 'todo');
 
-            // 완료 항목 후순위 정렬
             todos.sort((a, b) => {
                 if (a.status === 'clear' && b.status !== 'clear') return 1;
                 if (a.status !== 'clear' && b.status === 'clear') return -1;
                 return 0;
             });
 
-            // 1. 기습 퀴즈
             quizzes.forEach(item => {
                 const card = document.createElement('div');
                 card.className = "bg-red-50 border-[2.5px] border-red-400 rounded shadow-sm flex flex-col p-1.5 lg:p-2 min-h-[44px] md:min-h-[48px] shrink-0";
@@ -398,11 +403,11 @@
                 container.appendChild(card);
             });
 
-            // 2. 일반 투두
             todos.forEach(item => {
                 const card = document.createElement('div');
                 card.className = `border-[2.5px] border-black rounded shadow-sm flex justify-between items-center p-1.5 lg:p-2 min-h-[44px] md:min-h-[48px] shrink-0 draggable-todo-item ${item.status === 'clear' ? 'bg-gray-200' : 'bg-white cursor-move'}`;
                 card.setAttribute('data-id', item.id);
+                card.setAttribute('data-status', item.status); // 상태 확인을 위한 속성 부여
                 
                 if (item.status !== 'clear') card.setAttribute('draggable', 'true');
 
@@ -412,7 +417,6 @@
                         <input type="text" value="${item.title}" class="bg-transparent text-black font-bold text-xs md:text-sm w-full outline-none ${item.status === 'clear' ? 'line-through text-gray-500' : ''}" readonly>
                     </div>
                     <div class="flex gap-1 shrink-0 ml-2">
-                        <button onclick="handleTodoAction(${item.id}, 'delete')" class="bg-gray-300 text-black font-bold text-[10px] md:text-xs px-2 py-1 border border-black rounded-sm shadow-sm hover:bg-red-300 active:translate-y-px">삭제</button>
                         ${item.status !== 'clear' ? `<button onclick="handleTodoAction(${item.id}, 'clear')" class="bg-gray-200 text-black font-bold text-[10px] md:text-xs px-2 py-1 border border-black rounded-sm shadow-sm hover:bg-green-300 active:translate-y-px">완료</button>` : `<span class="text-xs font-black text-gray-500 px-2 py-1">완료됨</span>`}
                     </div>
                 `;
@@ -428,22 +432,21 @@
                 container.appendChild(card);
             });
 
-            // 3. 동적 퀘스트 추가 버튼
             const addBtn = document.createElement('button');
             addBtn.className = "bg-white border-[2.5px] border-black border-dashed rounded min-h-[44px] md:min-h-[48px] flex justify-center items-center hover:bg-gray-50 transition-colors shrink-0";
             addBtn.innerHTML = '<span class="text-black opacity-30 text-3xl lg:text-5xl font-bold leading-none mb-1">+</span>';
             addBtn.onclick = () => {
-                const title = prompt("새로운 일일 퀘스트를 입력하세요:");
+                let title = prompt("새로운 일일 퀘스트를 입력하세요 (최대 20자):");
                 if (title && title.trim()) {
-                    todoList.push({ id: Date.now(), type: 'todo', title: title.trim(), status: 'ready' });
+                    title = title.trim().substring(0, 20);
+                    todoList.push({ id: Date.now(), type: 'todo', title: title, status: 'ready' });
                     renderAll();
                 }
             };
             container.appendChild(addBtn);
         }
 
-        // [진행도 연동]
-        // 완료된 퀘스트 비율을 상단 목표 게이지에 반영
+        // 완료된 퀘스트 비율을 진행도 바에 반영
         function updateProgressBar() {
             const todos = todoList.filter(item => item.type === 'todo');
             const total = todos.length;
@@ -454,22 +457,21 @@
             document.getElementById('progress-text').innerText = `${clears}/${total}`;
         }
 
-        // [문제저장소 렌더링]
-        // 저장된 문제 리스트와 재도전 버튼 출력
         function renderStorageList() {
             const container = document.getElementById('storage-list-container');
             container.innerHTML = '';
             
             quizStorage.forEach(quiz => {
                 const card = document.createElement('div');
-                card.className = "bg-white border-[2.5px] border-black rounded shadow-sm flex flex-col p-2 min-h-[60px] md:min-h-[72px] shrink-0 relative gap-2";
+                card.className = "bg-white border-[2.5px] border-black rounded shadow-sm flex flex-col p-2 min-h-[60px] md:min-h-[72px] shrink-0 relative gap-2 cursor-pointer hover:bg-gray-50 transition-colors";
+                card.setAttribute('onclick', `openEditModal(${quiz.id}, event)`); // 클릭 시 편집 모달 호출
                 card.innerHTML = `
-                    <div class="text-black text-xs md:text-sm font-bold truncate pr-6">${quiz.title}</div>
-                    <div class="flex justify-between items-end mt-auto">
-                        <span class="bg-gray-200 border border-black text-black text-[9px] md:text-[10px] px-2 py-0.5 rounded-full">저장된 문제</span>
-                        <div class="flex gap-1">
-                            <button onclick="deleteQuizFromStorage(${quiz.id})" class="bg-gray-300 border-[2px] border-black rounded px-3 py-1 text-black font-bold text-[10px] md:text-xs shadow hover:bg-red-300 active:scale-95 transition-all">삭제</button>
-                            <button onclick="openSolveModalFromStorage(${quiz.id})" class="bg-gray-200 border-[2px] border-black rounded px-3 py-1 text-black font-bold text-[10px] md:text-xs shadow hover:bg-gray-300 active:scale-95 transition-all">다시풀기</button>
+                    <div class="text-black text-xs md:text-sm font-bold truncate pr-6 pointer-events-none">${quiz.title}</div>
+                    <div class="flex justify-between items-end mt-auto pointer-events-none">
+                        <span class="bg-gray-200 border border-black text-black text-[9px] md:text-[10px] px-2 py-0.5 rounded-full pointer-events-none">저장된 문제</span>
+                        <div class="flex gap-1 pointer-events-auto">
+                            <button onclick="event.stopPropagation(); deleteQuizFromStorage(${quiz.id})" class="bg-gray-300 border-[2px] border-black rounded px-3 py-1 text-black font-bold text-[10px] md:text-xs shadow hover:bg-red-300 active:scale-95 transition-all">삭제</button>
+                            <button onclick="event.stopPropagation(); openSolveModalFromStorage(${quiz.id})" class="bg-gray-200 border-[2px] border-black rounded px-3 py-1 text-black font-bold text-[10px] md:text-xs shadow hover:bg-gray-300 active:scale-95 transition-all">다시풀기</button>
                         </div>
                     </div>
                 `;
@@ -480,62 +482,62 @@
             addBtn.className = "bg-white border-[2.5px] border-black border-dashed rounded min-h-[44px] md:min-h-[48px] flex justify-center items-center hover:bg-gray-50 transition-colors shrink-0";
             addBtn.innerHTML = '<span class="text-black opacity-40 text-3xl md:text-4xl font-bold leading-none mb-1">+</span>';
             addBtn.onclick = () => {
+                editingQuizId = null; // 초기화
                 document.getElementById('input-quiz-title').value = '';
                 document.getElementById('input-quiz-content').value = '';
                 document.getElementById('input-quiz-answer').value = '';
+                document.getElementById('btn-submit-create').innerText = '제작';
                 openSpecificModal('create-modal');
             };
             container.appendChild(addBtn);
         }
 
-        // --- 3. 데이터 상호작용 액션 ---
-
-        // 투두 액션 연동 (수락 -> 완료)
         window.handleTodoAction = function(id, action) {
             const idx = todoList.findIndex(item => item.id === id);
             if (idx === -1) return;
             if (action === 'clear') {
                 todoList[idx].status = 'clear';
-                if (window.Questify) window.Questify.completeQuest('normal', 'medium'); // XP 연동
-            } else if (action === 'delete') {
-                todoList.splice(idx, 1);
+                if (window.Questify) window.Questify.gainXP(20); 
             }
             renderAll();
         };
 
-        // 완료 항목 일괄 삭제
-        document.getElementById('btn-clear-completed').addEventListener('click', () => {
-            const hasClear = todoList.some(i => i.type === 'todo' && i.status === 'clear');
-            if(!hasClear) return alert("완료된 퀘스트가 없습니다.");
-            if(confirm("완료된 퀘스트를 모두 삭제하시겠습니까?")) {
-                todoList = todoList.filter(i => !(i.type === 'todo' && i.status === 'clear'));
-                renderAll();
-            }
-        });
+        // 문제 편집 모달 열기 기능 추가
+        window.openEditModal = function(id, e) {
+            const quiz = quizStorage.find(q => q.id === id);
+            if (!quiz) return;
+            
+            editingQuizId = id;
+            document.getElementById('input-quiz-title').value = quiz.title;
+            document.getElementById('input-quiz-content').value = quiz.content;
+            document.getElementById('input-quiz-answer').value = quiz.answer;
+            document.getElementById('btn-submit-create').innerText = '수정';
+            
+            openSpecificModal('create-modal');
+        };
 
-        // 신규 기능: 랜덤 기습 퀴즈 생성
         document.getElementById('btn-trigger-surprise').addEventListener('click', () => {
             if (quizStorage.length === 0) return alert("저장된 문제가 없습니다! 먼저 문제를 만들어주세요.");
-            const randomQuiz = quizStorage[Math.floor(Math.random() * quizStorage.length)];
-            const isExist = todoList.some(item => item.type === 'quiz' && item.originQuizId === randomQuiz.id);
-            if (isExist) return alert("이미 같은 문제가 퀘스트로 등록되어 있습니다.");
             
+            // 현재 일일 퀘스트에 없는 퀴즈들만 필터링
+            const availableQuizzes = quizStorage.filter(q => !todoList.some(item => item.type === 'quiz' && item.originQuizId === q.id));
+            
+            if (availableQuizzes.length === 0) return alert("모든 문제가 이미 일일퀘스트에 등록되어 있습니다.");
+            
+            // 남은 퀴즈 안에서만 랜덤 선택
+            const randomQuiz = availableQuizzes[Math.floor(Math.random() * availableQuizzes.length)];
             todoList.unshift({ id: Date.now(), type: 'quiz', title: randomQuiz.title, originQuizId: randomQuiz.id });
             renderAll();
             alert("💥 기습 퀴즈가 일일퀘스트 상단에 추가되었습니다!");
         });
 
-        // 저장소 문제 삭제 + 연결된 기습 퀴즈 정리
         window.deleteQuizFromStorage = function(quizId) {
             if(confirm("이 문제를 정말로 삭제하시겠습니까?")) {
                 quizStorage = quizStorage.filter(q => q.id !== quizId);
-                // 혹시 일일퀘스트에 기습퀴즈로 남아있다면 같이 지워줍니다.
                 todoList = todoList.filter(item => !(item.type === 'quiz' && item.originQuizId === quizId));
                 renderAll();
             }
         };
-
-        // --- 4. 모달 및 문제 생성/풀이 시스템 ---
 
         const modalOverlay = document.getElementById('modal-overlay');
         const modals = document.querySelectorAll('.modal-content');
@@ -552,16 +554,15 @@
                 modalOverlay.classList.add('hidden');
                 modalOverlay.classList.remove('flex');
                 currentActiveQuiz = null;
+                editingQuizId = null; // 초기화 추가
                 
-                // 타이머 보상 대기 중 모달을 강제로 닫을 경우 기회 소멸
                 if (pendingMassiveReward) {
-                    alert("문제 생성을 취소하여 대량의 경험치 획득 기회가 소멸되었습니다.");
+                    alert("문제 생성을 취소하여 경험치 획득 기회가 소멸되었습니다.");
                     pendingMassiveReward = false;
                 }
             });
         });
 
-        // [문제 제작 제출 & 대량 경험치 지급 연동]
         document.getElementById('btn-submit-create').addEventListener('click', () => {
             const title = document.getElementById('input-quiz-title').value.trim();
             const content = document.getElementById('input-quiz-content').value.trim();
@@ -569,16 +570,31 @@
 
             if (!title || !content || !answer) return alert("모든 빈칸을 채워주세요!");
 
-            // 1. 문제 데이터 저장
-            quizStorage.push({ id: Date.now(), title, content, answer });
-            
-            // 2. 타이머 달성 후 문제 생성을 통한 '대량의 경험치' 지급
-            if (pendingMassiveReward) {
-                if (window.Questify) window.Questify.completeQuest('challenge', '3h'); // +200 XP 보상 지급
-                alert("축하합니다! 대량의 경험치를 획득했습니다!");
-                pendingMassiveReward = false; // 상태 초기화
+            if (editingQuizId) {
+                // 수정 모드
+                const quizIndex = quizStorage.findIndex(q => q.id === editingQuizId);
+                if (quizIndex !== -1) {
+                    quizStorage[quizIndex].title = title;
+                    quizStorage[quizIndex].content = content;
+                    quizStorage[quizIndex].answer = answer;
+                    
+                    // 기 등록된 기습퀴즈의 제목도 동기화 
+                    todoList.forEach(item => {
+                        if (item.type === 'quiz' && item.originQuizId === editingQuizId) item.title = title;
+                    });
+                }
+                alert("문제가 성공적으로 수정되었습니다.");
+                editingQuizId = null;
             } else {
-                alert("문제가 성공적으로 저장되었습니다.");
+                // 신규 제작 모드
+                quizStorage.push({ id: Date.now(), title, content, answer });
+                if (pendingMassiveReward) {
+                    if (window.Questify) window.Questify.gainXP(50); 
+                    alert("축하합니다! 문제 생성 50 경험치를 획득했습니다!");
+                    pendingMassiveReward = false; 
+                } else {
+                    alert("문제가 성공적으로 저장되었습니다.");
+                }
             }
 
             document.getElementById('modal-overlay').classList.add('hidden');
@@ -621,8 +637,8 @@
                 resultBox.innerText = "⭕ 정답입니다! 경험치를 획득했습니다.";
                 
                 if (window.Questify) {
-                    if (currentActiveQuiz.isSurprise) window.Questify.completeQuest('normal', 'hard'); 
-                    else window.Questify.completeQuest('normal', 'easy'); 
+                    if (currentActiveQuiz.isSurprise) window.Questify.gainXP(30); 
+                    else window.Questify.gainXP(20); 
                 }
                 if (currentActiveQuiz.isSurprise && currentActiveQuiz.todoQuizId) {
                     const idx = todoList.findIndex(item => item.id === currentActiveQuiz.todoQuizId);
@@ -635,7 +651,6 @@
             }
         });
 
-        // --- 5. 타이머 코어 로직 ---
         const timerDisplay = document.getElementById('timer-display');
         const startTimerBtn = document.getElementById('start-timer-btn');
         const resetTimerBtn = document.getElementById('reset-timer-btn');
@@ -674,15 +689,14 @@
                 if (totalSeconds <= 0) {
                     totalSeconds = 0; updateDisplays(); stopTimer();
                     
-                    // 기존: 타이머 종료 시 바로 보상 지급
-                    // 변경: 문제 생성을 조건으로 대량 보상 트리거 
-                    alert('⏰ 집중 시간이 끝났습니다!\n\n문제를 생성하면 대량의 경험치를 얻습니다!');
+                    alert('⏰ 집중 시간이 끝났습니다!\n\n문제를 생성하면 50 경험치를 얻습니다!');
                     pendingMassiveReward = true; 
+                    editingQuizId = null; 
                     
-                    // 문제 생성 모달 강제 오픈 및 초기화
                     document.getElementById('input-quiz-title').value = '';
                     document.getElementById('input-quiz-content').value = '';
                     document.getElementById('input-quiz-answer').value = '';
+                    document.getElementById('btn-submit-create').innerText = '제작';
                     openSpecificModal('create-modal');
                 }
             }, 1000);
@@ -745,7 +759,6 @@
             }
         });
 
-        // --- 6. 드래그 앤 드롭 정렬 (PC & Mobile) ---
         let dragSrcEl = null;
 
         function handleDragStart(e) {
@@ -757,7 +770,9 @@
         function handleDragOver(e) {
             if (e.preventDefault) e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            if (this !== dragSrcEl && this.classList.contains('draggable-todo-item')) {
+            
+            // 완료된 퀘스트(status: clear) 위로는 드래그/침범 금지
+            if (this !== dragSrcEl && this.classList.contains('draggable-todo-item') && this.getAttribute('data-status') !== 'clear') {
                 const children = Array.from(this.parentNode.querySelectorAll('.draggable-todo-item'));
                 if (children.indexOf(dragSrcEl) < children.indexOf(this)) this.after(dragSrcEl);
                 else this.before(dragSrcEl);
@@ -782,7 +797,9 @@
             const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
             if (!targetEl) return;
             const itemEl = targetEl.closest('.draggable-todo-item');
-            if (itemEl && itemEl !== touchStartEl) {
+            
+            // 완료된 퀘스트(status: clear) 위로는 드래그/침범 금지
+            if (itemEl && itemEl !== touchStartEl && itemEl.getAttribute('data-status') !== 'clear') {
                 const children = Array.from(this.parentNode.querySelectorAll('.draggable-todo-item'));
                 if (children.indexOf(touchStartEl) < children.indexOf(itemEl)) itemEl.after(touchStartEl);
                 else itemEl.before(touchStartEl);
@@ -798,35 +815,32 @@
         function reorderTodoListData() {
             const currentDOMIds = Array.from(document.querySelectorAll('.draggable-todo-item')).map(el => parseInt(el.getAttribute('data-id')));
             const quizzes = todoList.filter(item => item.type === 'quiz');
+            // 완료된 퀘스트는 정렬에 관여하지 않고 언제나 무조건 배열의 맨 뒤로 고정
             const completedTodos = todoList.filter(item => item.type === 'todo' && item.status === 'clear');
             const activeTodos = todoList.filter(item => item.type === 'todo' && item.status !== 'clear');
 
             activeTodos.sort((a, b) => currentDOMIds.indexOf(a.id) - currentDOMIds.indexOf(b.id));
             todoList = [...quizzes, ...activeTodos, ...completedTodos];
-            saveAppData(); // 정렬 순서 저장
+            saveAppData(); 
         }
 
-        // --- 7. 기본 UI 토글 및 탭 로직 ---
         const mobileToggleBtn = document.getElementById('mobile-toggle-btn');
         const leftPanel = document.getElementById('left-panel');
         const rightPanelWrapper = document.getElementById('right-panel-wrapper');
         
         mobileToggleBtn.addEventListener('click', () => {
-            const isHidden = rightPanelWrapper.classList.toggle('hidden');
-            if (isHidden) {
-                leftPanel.classList.replace('h-[45%]', 'h-full');
-                mobileToggleBtn.innerText = '메뉴 보기';
+            const isCollapsed = rightPanelWrapper.classList.toggle('mobile-collapsed');
+            if (isCollapsed) {
+                leftPanel.classList.replace('h-[45%]', 'h-[calc(100%-56px)]');
             } else {
-                leftPanel.classList.replace('h-full', 'h-[45%]');
-                mobileToggleBtn.innerText = '메뉴 숨기기';
+                leftPanel.classList.replace('h-[calc(100%-56px)]', 'h-[45%]');
             }
         });
 
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) { 
-                rightPanelWrapper.classList.remove('hidden');
-                leftPanel.classList.replace('h-full', 'h-[45%]'); 
-                mobileToggleBtn.innerText = '메뉴 숨기기';
+                rightPanelWrapper.classList.remove('mobile-collapsed');
+                leftPanel.classList.replace('h-[calc(100%-56px)]', 'h-[45%]'); 
             }
         });
 
@@ -872,7 +886,6 @@
             tabStorage.querySelector('span').className = "text-gray-500 font-bold text-[2vh] md:text-[2vh] lg:text-[3vh] flex items-center gap-1 md:gap-2";
         });
 
-        // --- 8. 슬롯 인벤토리 기능 ---
         document.getElementById('user-profile-card').addEventListener('click', () => {
             renderSlotInventory();
             openSpecificModal('slot-modal');
@@ -918,7 +931,6 @@
             };
         }
 
-        // --- 9. 캐릭터 화면 자유 드래그 이동 ---
         const draggableCharacter = document.getElementById('draggable-character');
         const gameScreenBox = document.getElementById('game-screen');
         let isCharDragging = false, charStartX, charStartY, charInitialLeft, charInitialTop;
@@ -974,7 +986,6 @@
         });
         resizeObserver.observe(gameScreenBox);
 
-        // --- 10. 데이터 전체 초기화 (캐시 삭제) ---
         document.getElementById('btn-reset-all-data').addEventListener('click', () => {
             if (confirm("⚠️ 경고: 모든 캐릭터 성장, 퀘스트, 문제 데이터가 완전히 삭제되며 복구할 수 없습니다.\\n\\n정말 모든 데이터를 삭제하시겠습니까?")) {
                 localStorage.clear();
@@ -982,7 +993,6 @@
             }
         });
 
-        // --- 앱 구동 초기화 ---
         loadAppData();
         renderAll();
 
