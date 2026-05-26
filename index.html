@@ -79,7 +79,8 @@
                             <div class="w-full flex justify-center gap-4 md:gap-8 px-1 md:px-8">
                                 <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="3600">+ 1h</button>
                                 <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="1800">+ 30m</button>
-                                <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="300">+ 5m</button>
+                                <!-- 신규 기능: 초 단위 빠른 타이머 추가 -->
+                                <button class="preset-btn bg-white border-[2.5px] md:border-[3px] border-black rounded-lg flex-1 py-1.5 md:py-2.5 text-black font-bold text-sm md:text-base lg:text-lg shadow-sm hover:bg-gray-50 active:scale-95 transition-all" data-time="5">+ 5s</button>
                             </div>
                             <div class="w-full flex justify-center gap-3 mt-1 md:mt-2">
                                 <button id="reset-timer-btn" class="bg-white border-[3px] md:border-[4px] border-black rounded-lg w-[25%] md:w-[20%] py-2 md:py-3 lg:py-4 text-black font-black text-sm md:text-lg lg:text-xl shadow-sm hover:bg-gray-100 active:scale-95 transition-all">초기화</button>
@@ -94,8 +95,8 @@
             <div id="modal-overlay" class="absolute inset-0 bg-gray-900/60 z-50 hidden justify-center items-center p-4 md:p-6">
                 <div id="create-modal" class="modal-content bg-white w-full max-w-[95%] md:max-w-[85%] h-[90%] border-[4px] border-black rounded-xl p-3 md:p-5 flex flex-col gap-3 relative hidden shadow-xl">
                     <button class="close-modal-btn absolute -top-3 -left-3 md:-top-4 md:-left-4 w-7 h-7 md:w-9 md:h-9 bg-white rounded-full border-[3px] border-black flex justify-center items-center text-black font-bold hover:scale-105 active:scale-95 transition-transform z-50">X</button>
-                    <input id="input-quiz-title" type="text" maxlength="27" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner" placeholder="문제 제목을 입력해주세요. (최대 27자)">
-                    <textarea id="input-quiz-content" class="w-full flex-1 bg-gray-50 border-[2.5px] border-gray-400 rounded-xl px-4 py-3 text-sm md:text-base font-bold text-black outline-none resize-none placeholder-gray-500 shadow-inner" placeholder="문제를 적어주세요."></textarea>
+                    <input id="input-quiz-title" type="text" maxlength="27" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner" placeholder="문제 목록에 표시될 제목을 적어주세요. (최대 27글자)">
+                    <textarea id="input-quiz-content" class="w-full flex-1 bg-gray-50 border-[2.5px] border-gray-400 rounded-xl px-4 py-3 text-sm md:text-base font-bold text-black outline-none resize-none placeholder-gray-500 shadow-inner" placeholder="질문을 적어주세요."></textarea>
                     <input id="input-quiz-answer" type="text" class="w-full bg-gray-50 border-[2.5px] border-gray-400 rounded-full px-4 py-2 md:py-3 text-sm md:text-base font-bold text-black outline-none placeholder-gray-500 shadow-inner mt-1" placeholder="정답을 적어주세요.">
                     <button id="btn-submit-create" class="bg-gray-200 border-[3px] border-black rounded-lg py-1.5 md:py-2 px-10 text-black font-black text-base md:text-xl shadow-sm hover:bg-gray-300 active:scale-95 transition-all self-center mt-2">제작</button>
                 </div>
@@ -635,6 +636,8 @@
             if (isCorrect) {
                 resultBox.className = "w-full bg-green-100 border-[2.5px] border-green-500 rounded-xl px-3 py-2 text-center text-sm md:text-base font-bold text-green-700 h-24 md:h-28 flex items-center justify-center";
                 resultBox.innerText = "⭕ 정답입니다! 경험치를 획득했습니다.";
+                // 정답 처리 후에는 오답 클릭 이벤트를 비워 둔다.
+                resultBox.onclick = null; // 이전 오답 이벤트가 남아있지 않도록 제거
                 
                 if (window.Questify) {
                     if (currentActiveQuiz.isSurprise) window.Questify.gainXP(30); 
@@ -646,8 +649,20 @@
                     renderAll();
                 }
             } else {
-                resultBox.className = "w-full bg-red-100 border-[2.5px] border-red-500 rounded-xl px-3 py-2 text-center text-sm md:text-base font-bold text-red-700 h-24 md:h-28 flex items-center justify-center";
-                resultBox.innerText = `❌ 오답입니다! (입력: ${userAnswer})`;
+                // 신규 기능: 오답 박스를 터치하면 정답을 즉시 공개
+                resultBox.className = "w-full bg-red-100 border-[2.5px] border-red-500 rounded-xl px-3 py-2 text-center text-sm md:text-base font-bold text-red-700 h-24 md:h-28 flex flex-col items-center justify-center cursor-pointer select-none hover:bg-red-200 transition-colors";
+                resultBox.innerHTML = `
+                    <div>❌ 오답입니다! (입력: ${userAnswer})</div>
+                    <div class="text-xs text-red-600 mt-1.5 opacity-80 animate-pulse">터치하면 정답이 표시됩니다.</div>
+                `;
+                resultBox.onclick = function() {
+                    resultBox.innerHTML = `
+                        <div>❌ 오답입니다! (입력: ${userAnswer})</div>
+                        <div class="text-sm md:text-base font-black text-blue-700 mt-1">정답: ${currentActiveQuiz.answer}</div>
+                    `;
+                    resultBox.onclick = null;
+                    resultBox.classList.remove('cursor-pointer', 'hover:bg-red-200');
+                };
             }
         });
 
