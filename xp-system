@@ -1,0 +1,709 @@
+/**
+ * ============================================================
+ *  Questify — 경험치 + 캐릭터 슬롯 시스템 (xp-system.js)
+ *  담당: Tech Writer (김한)
+ * ============================================================
+ *
+ * [ 팀장에게 요청할 것 ]
+ *   HTML의 </body> 바로 위에 한 줄 추가:
+ *   <script src="xp-system/xp-system.js"></script>
+ *
+ * ============================================================
+ *
+ * [ 이 파일이 담당하는 것 ]
+ *   ✅ XP 획득 및 레벨업 계산 로직
+ *   ✅ 레벨 텍스트 / XP 바 UI 업데이트
+ *   ✅ 오늘의 목표 바 UI 업데이트
+ *   ✅ "+12 XP", "🎉 레벨업!" 플로팅 텍스트
+ *   ✅ 캐릭터 슬롯 시스템 (다중 캐릭터 육성)
+ *   ✅ 유니온 레벨 계산 (전체 캐릭터 레벨 합산)
+ *   ✅ LocalStorage 저장 / 복원
+ *
+ * [ 이 파일이 담당하지 않는 것 ]
+ *   ❌ 캐릭터 도트 이미지 교체 (캐릭터 담당 팀원이 별도 처리)
+ *      → 현재 슬롯의 레벨: Questify.getActiveChar().level
+ *      → 전체 캐릭터 데이터: Questify.getCharacters()
+ *
+ * ============================================================
+ *
+ * [ 캐릭터 슬롯 시스템 개념 ]
+ *
+ *   1. 모든 캐릭터는 MAX_LEVEL(50)까지 레벨을 올릴 수 있습니다.
+ *   2. 현재 활성 캐릭터가 만렙에 도달하면 '졸업' 처리됩니다.
+ *   3. 졸업하면 새 캐릭터 슬롯을 추가할 수 있습니다 (최대 MAX_SLOTS개).
+ *   4. 슬롯 간 자유롭게 전환하여 여러 캐릭터를 동시에 육성할 수 있습니다.
+ *   5. 유니온 레벨 = 모든 슬롯의 레벨 합산 → 전체 성장 지표로 활용합니다.
+ *
+ *   슬롯 상태 예시:
+ *     슬롯 0: Lv.50 (졸업 완료) ← 만렙 달성 후 고정
+ *     슬롯 1: Lv.23 (육성 중)   ← 현재 활성 슬롯
+ *     슬롯 2: Lv.1  (신규)
+ *     유니온 레벨: 50 + 23 + 1 = 74
+ *
+ * ============================================================
+ *
+ * [ 다른 팀원이 쓸 공개 API ]
+ *
+ *   Questify.completeQuest('normal', 'easy')     → +5 XP
+ *   Questify.completeQuest('normal', 'medium')   → +12 XP
+ *   Questify.completeQuest('normal', 'hard')     → +25 XP
+ *   Questify.completeQuest('challenge', '30min') → +25 XP
+ *   Questify.completeQuest('challenge', '1h')    → +60 XP
+ *   Questify.completeQuest('challenge', '3h')    → +200 XP
+ *
+ *   Questify.addSlot()         → 새 캐릭터 슬롯 추가 (만렙 후 가능)
+ *   Questify.switchSlot(index) → 다른 슬롯으로 전환
+ *   Questify.getUnionLevel()   → 유니온 레벨 반환 (전체 레벨 합산)
+ *   Questify.getCharacters()   → 전체 슬롯 데이터 반환
+ *   Questify.getActiveChar()   → 현재 활성 캐릭터 데이터 반환
+ *   Questify.getSlotInfo()     → 슬롯 현황 요약 반환
+ *
+ * ============================================================
+ */
+
+(function () {
+    'use strict';
+
+
+    /* =========================================================
+       ■ 상수
+    ========================================================= */
+
+    // 캐릭터 한 명이 올라갈 수 있는 최대 레벨입니다.
+    // 만렙을 찍으면 이 캐릭터는 '졸업' 처리되고 새 슬롯을 열 수 있습니다.
+    const MAX_LEVEL = 50;
+
+    // 보유할 수 있는 최대 캐릭터 슬롯 수입니다.
+    // 이 숫자만 바꾸면 슬롯 상한이 조정됩니다.
+    const MAX_SLOTS = 10;
+
+    // LocalStorage 저장 키입니다.
+    const STORAGE_KEY = 'questify_player_v2'; // 슬롯 시스템 추가로 v2로 올림
+
+    // 퀘스트 종류 · 난이도별 XP 보상표입니다.
+    const XP_REWARDS = {
+        // 일반 퀘스트 (체크리스트형)
+        normal: {
+            easy:   5,  // 쉬움
+            medium: 12, // 보통
+            hard:   25, // 어려움
+        },
+        // 코인걸기 퀘스트 (타이머형)
+        challenge: {
+            '30min': 25,  // 30분 집중
+            '1h':    60,  // 1시간 집중
+            '3h':    200, // 3시간 집중
+        },
+    };
+
+
+    /* =========================================================
+       ■ 플레이어 상태
+       단일 캐릭터 state에서 → 슬롯 배열 구조로 변경합니다.
+    ========================================================= */
+
+    // characters: 캐릭터 슬롯 배열. 각 슬롯은 { level, xp } 객체입니다.
+    //   처음 시작 시 슬롯 0번 하나만 존재합니다.
+    // activeSlot: 현재 XP를 받고 있는 활성 슬롯의 인덱스입니다.
+    let state = {
+        characters: [{ level: 1, xp: 0 }],
+        activeSlot: 0,
+    };
+
+    /**
+     * 현재 활성 슬롯의 캐릭터 객체를 반환합니다.
+     * 이 객체의 참조를 직접 수정하면 state.characters 배열도 함께 바뀝니다.
+     *
+     * @returns {{ level: number, xp: number }} 현재 활성 캐릭터
+     */
+    function getCurrentChar() {
+        return state.characters[state.activeSlot];
+    }
+
+
+    /* =========================================================
+       ■ XP 곡선 계산
+    ========================================================= */
+
+    /**
+     * 해당 레벨에서 다음 레벨로 올라가는 데 필요한 XP를 계산합니다.
+     *
+     * 회의 결정:
+     *   5레벨마다 필요 XP가 1.2배씩 증가하되, 2.0배를 상한으로 고정합니다.
+     *
+     * 계산 예시:
+     *   Lv.1  → 60 × 1.0  + 1  × 15 = 75 XP
+     *   Lv.5  → 60 × 1.2  + 5  × 15 = 147 XP
+     *   Lv.10 → 60 × 1.44 + 10 × 15 = 236 XP
+     *   Lv.30 → 60 × 2.0  + 30 × 15 = 570 XP (2.0 상한 적용)
+     *
+     * @param {number} level - 현재 레벨
+     * @returns {number} 다음 레벨까지 필요한 XP
+     */
+    function getXpRequired(level) {
+        if (level >= MAX_LEVEL) return Infinity;
+        const multiplier = Math.min(Math.pow(1.2, Math.floor(level / 5)), 2.0);
+        return Math.floor(60 * multiplier + level * 15);
+    }
+
+    /**
+     * 전체 슬롯의 레벨을 합산해 유니온 레벨을 계산합니다.
+     * 메이플스토리의 메이플 유니온 시스템과 동일한 개념입니다.
+     *
+     * 예시: 슬롯 0 (Lv.50) + 슬롯 1 (Lv.23) + 슬롯 2 (Lv.1) = 74
+     *
+     * @returns {number} 전체 캐릭터 레벨 합산
+     */
+    function getUnionLevel() {
+        return state.characters.reduce((sum, char) => sum + char.level, 0);
+    }
+
+
+    /* =========================================================
+       ■ DOM 참조 저장소
+    ========================================================= */
+    const DOM = {};
+
+
+    /* =========================================================
+       ■ 초기화
+    ========================================================= */
+
+    function init() {
+        connectLevelUI();   // 1. 레벨 텍스트 / 목표 바 요소를 DOM에서 찾아 연결
+        injectXPBarFill();  // 2. XP 바 채우기용 div 삽입
+        createFloatLayer(); // 3. 플로팅 텍스트 레이어 생성
+        injectCSS();        // 4. 애니메이션 CSS 주입
+        load();             // 5. LocalStorage 데이터 복원
+        updateUI();         // 6. 초기 화면 렌더링
+    }
+
+
+    /* =========================================================
+       ■ 초기화 세부 함수들
+    ========================================================= */
+
+    /**
+     * [1단계] 팀장 코드에서 레벨 텍스트와 목표 바 요소를 찾아 연결합니다.
+     * id가 없는 요소이므로 텍스트 내용으로 찾습니다.
+     */
+    function connectLevelUI() {
+        const allDivs = [...document.querySelectorAll('#game-screen div')];
+
+        // "Lv.999" 텍스트를 가진 div = 레벨 표시 요소
+        DOM.levelEl = allDivs.find(
+            d => !d.children.length && d.textContent.trim() === 'Lv.999'
+        );
+
+        if (!DOM.levelEl) {
+            console.warn('[Questify] 레벨 표시 요소(Lv.999)를 찾지 못했습니다.');
+        }
+
+        // "2/3" span = 오늘의 목표 텍스트
+        const allSpans = [...document.querySelectorAll('#game-screen span')];
+        const goalSpan = allSpans.find(s => s.textContent.trim() === '2/3');
+        if (goalSpan) {
+            DOM.goalSpan = goalSpan;
+            // span 부모 div의 첫 번째 자식 = 목표 바 채우기 div
+            DOM.goalFill = goalSpan.parentElement?.children[0] || null;
+        }
+    }
+
+    /**
+     * [2단계] 레벨 요소의 다음 형제 div(XP 바 컨테이너)에 채우기 div를 삽입합니다.
+     *
+     * 삽입 전:
+     *   <div>Lv.999</div>           ← DOM.levelEl
+     *   <div class="bg-gray-300">   ← XP 바 컨테이너
+     *   </div>
+     *
+     * 삽입 후:
+     *   <div>Lv.999</div>
+     *   <div class="bg-gray-300" style="position:relative; overflow:hidden;">
+     *       <div style="width:0%;..."></div>  ← 채우기 div (새로 삽입)
+     *   </div>
+     *   <div>0 / 75 XP</div>  ← XP 수치 텍스트 (새로 추가)
+     */
+    function injectXPBarFill() {
+        if (!DOM.levelEl) return;
+
+        const xpBarContainer = DOM.levelEl.nextElementSibling;
+        if (!xpBarContainer) return;
+
+        xpBarContainer.style.position = 'relative';
+        xpBarContainer.style.overflow = 'hidden';
+
+        DOM.xpFill = document.createElement('div');
+        DOM.xpFill.style.cssText = [
+            'position:absolute', 'inset:0',
+            'width:0%', 'background:#444',
+            'transition:width 0.5s ease',
+        ].join(';');
+        xpBarContainer.appendChild(DOM.xpFill);
+
+        DOM.xpText = document.createElement('div');
+        DOM.xpText.style.cssText = 'font-size:8px;color:#999;font-weight:bold;margin-top:2px;';
+        xpBarContainer.parentElement?.appendChild(DOM.xpText);
+    }
+
+    /**
+     * [3단계] 플로팅 텍스트를 띄울 오버레이 레이어를 game-screen 안에 생성합니다.
+     * pointer-events:none이므로 클릭/드래그를 막지 않습니다.
+     */
+    function createFloatLayer() {
+        const gameScreen = document.getElementById('game-screen');
+        if (!gameScreen) return;
+
+        DOM.floatLayer = document.createElement('div');
+        DOM.floatLayer.style.cssText = [
+            'position:absolute', 'inset:0',
+            'pointer-events:none', 'z-index:100', 'overflow:hidden',
+        ].join(';');
+        gameScreen.appendChild(DOM.floatLayer);
+    }
+
+    /**
+     * [4단계] 플로팅 텍스트 애니메이션 CSS를 <head>에 주입합니다.
+     */
+    function injectCSS() {
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes xpFloatUp {
+                0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+                20%  { opacity: 1; transform: translate(-50%, -90%) scale(1.1); }
+                100% { opacity: 0; transform: translate(-50%, -220%) scale(1); }
+            }
+            @keyframes xpLevelPop {
+                0%, 100% { transform: scale(1); }
+                50%      { transform: scale(1.5); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+
+    /* =========================================================
+       ■ UI 업데이트
+    ========================================================= */
+
+    /**
+     * 현재 활성 캐릭터의 state를 바탕으로 레벨, XP 바, 수치 텍스트를 갱신합니다.
+     * XP 획득 · 레벨업 · 슬롯 전환 시마다 호출됩니다.
+     */
+    function updateUI() {
+        const char    = getCurrentChar();
+        const isMax   = char.level >= MAX_LEVEL;
+        const required = isMax ? 0 : getXpRequired(char.level);
+        const pct      = isMax ? 100 : (char.xp / required * 100);
+
+        // 레벨 텍스트 업데이트
+        if (DOM.levelEl) {
+            DOM.levelEl.textContent = `Lv.${char.level}`;
+        }
+
+        // XP 바 채우기 너비 업데이트 (CSS transition으로 부드럽게 변합니다)
+        if (DOM.xpFill) {
+            DOM.xpFill.style.width = `${pct}%`;
+        }
+
+        // XP 수치 텍스트 업데이트
+        if (DOM.xpText) {
+            DOM.xpText.textContent = isMax
+                ? `MAX  |  유니온 Lv.${getUnionLevel()}`
+                : `${char.xp} / ${required} XP  |  유니온 Lv.${getUnionLevel()}`;
+        }
+    }
+
+
+    /* =========================================================
+       ■ 플로팅 텍스트
+    ========================================================= */
+
+    /**
+     * 화면 중앙에 텍스트가 위로 떠오르며 사라지는 연출을 재생합니다.
+     *
+     * @param {string}  text      - 표시할 텍스트
+     * @param {boolean} isLevelUp - true면 글자를 더 크게 표시합니다.
+     */
+    function showFloat(text, isLevelUp = false) {
+        if (!DOM.floatLayer) return;
+
+        const el = document.createElement('div');
+        el.textContent = text;
+        el.style.cssText = [
+            'position:absolute', 'left:50%', 'top:50%',
+            `font-size:${isLevelUp ? '20px' : '15px'}`,
+            'font-weight:900', 'color:#111',
+            'text-shadow:1px 1px 0 #fff,-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff',
+            'white-space:nowrap', 'pointer-events:none',
+            'animation:xpFloatUp 1.3s ease-out forwards',
+        ].join(';');
+
+        DOM.floatLayer.appendChild(el);
+        setTimeout(() => el.remove(), 1400);
+    }
+
+
+    /* =========================================================
+       ■ XP / 레벨 핵심 로직
+    ========================================================= */
+
+    /**
+     * 현재 활성 캐릭터에게 XP를 지급하고 레벨업 조건을 확인합니다.
+     * 외부에서 직접 호출하지 말고 completeQuest()를 통해 사용해주세요.
+     *
+     * @param {number} amount - 지급할 XP 양
+     */
+    function gainXP(amount) {
+        const char = getCurrentChar();
+
+        // 현재 캐릭터가 만렙이면 XP를 받을 수 없습니다.
+        // 새 슬롯으로 전환하거나 새 슬롯을 추가해야 합니다.
+        if (char.level >= MAX_LEVEL) {
+            showFloat('만렙! 새 캐릭터를 추가하세요.');
+            return;
+        }
+
+        showFloat(`+${amount} XP`);
+        char.xp += amount;
+
+        // 한 번에 여러 레벨이 오를 수 있으므로 while로 반복 체크합니다.
+        while (char.level < MAX_LEVEL && char.xp >= getXpRequired(char.level)) {
+            char.xp -= getXpRequired(char.level);
+            char.level++;
+            onLevelUp();
+        }
+
+        // 만렙 도달 시 잔여 XP를 0으로 고정하고 졸업 처리합니다.
+        if (char.level >= MAX_LEVEL) {
+            char.xp = 0;
+            onGraduate();
+        }
+
+        updateUI();
+        save();
+    }
+
+    /**
+     * 레벨업 시 호출됩니다.
+     * 레벨업 안내 텍스트를 띄우고 레벨 숫자에 팝 애니메이션을 재생합니다.
+     */
+    function onLevelUp() {
+        const char = getCurrentChar();
+        showFloat(`🎉 Lv.${char.level} 달성!`, true);
+
+        // 레벨 숫자 팝 애니메이션
+        // animation을 'none'으로 먼저 리셋해야 연속 레벨업 시에도 재생됩니다.
+        if (DOM.levelEl) {
+            DOM.levelEl.style.animation = 'none';
+            requestAnimationFrame(() => {
+                DOM.levelEl.style.animation = 'xpLevelPop 0.4s ease';
+            });
+        }
+    }
+
+    /**
+     * 현재 캐릭터가 만렙(MAX_LEVEL)에 도달했을 때 호출됩니다.
+     * 졸업 안내 메시지를 표시하고 새 슬롯 추가 가능 여부를 알립니다.
+     */
+    function onGraduate() {
+        const canAdd = state.characters.length < MAX_SLOTS;
+
+        showFloat(`⭐ Lv.${MAX_LEVEL} 졸업!`, true);
+
+        // 새 슬롯을 만들 수 있으면 안내 텍스트를 추가로 띄웁니다.
+        if (canAdd) {
+            // 1초 뒤에 띄워서 졸업 텍스트와 겹치지 않게 합니다.
+            setTimeout(() => showFloat('새 캐릭터를 추가할 수 있습니다!'), 1000);
+        } else {
+            // 모든 슬롯이 꽉 찬 경우 (MAX_SLOTS에 도달)
+            setTimeout(() => showFloat(`유니온 Lv.${getUnionLevel()} 달성!`, true), 1000);
+        }
+    }
+
+
+    /* =========================================================
+       ■ 캐릭터 슬롯 시스템
+    ========================================================= */
+
+    /**
+     * 새 캐릭터 슬롯을 추가하고 자동으로 그 슬롯으로 전환합니다.
+     *
+     * 조건:
+     *   1. 현재 활성 캐릭터가 만렙(MAX_LEVEL)이어야 합니다.
+     *   2. 보유 슬롯 수가 MAX_SLOTS 미만이어야 합니다.
+     *
+     * 성공 시: 새 슬롯(Lv.1)을 추가하고 활성 슬롯을 새 슬롯으로 전환합니다.
+     * 실패 시: 콘솔에 이유를 출력하고 아무것도 하지 않습니다.
+     *
+     * @returns {boolean} 슬롯 추가 성공 여부
+     */
+    function addSlot() {
+        const char = getCurrentChar();
+
+        // 현재 캐릭터가 만렙이 아니면 새 슬롯을 열 수 없습니다.
+        if (char.level < MAX_LEVEL) {
+            console.warn(
+                `[Questify] 새 슬롯은 현재 캐릭터가 만렙(Lv.${MAX_LEVEL})을 ` +
+                `달성해야 열 수 있습니다. 현재 레벨: Lv.${char.level}`
+            );
+            return false;
+        }
+
+        // 슬롯이 이미 가득 찼으면 추가할 수 없습니다.
+        if (state.characters.length >= MAX_SLOTS) {
+            console.warn(
+                `[Questify] 슬롯이 가득 찼습니다. ` +
+                `최대 ${MAX_SLOTS}개까지 보유할 수 있습니다.`
+            );
+            return false;
+        }
+
+        // 새 캐릭터를 배열에 추가합니다.
+        state.characters.push({ level: 1, xp: 0 });
+
+        // 자동으로 새 슬롯으로 전환합니다.
+        state.activeSlot = state.characters.length - 1;
+
+        showFloat('✨ 새 캐릭터 등장!', true);
+        updateUI();
+        save();
+
+        return true;
+    }
+
+    /**
+     * 활성 슬롯을 다른 슬롯으로 전환합니다.
+     * 전환 후 해당 캐릭터의 레벨/XP로 UI가 갱신됩니다.
+     *
+     * 사용 예시:
+     *   Questify.switchSlot(0); // 첫 번째 캐릭터로 전환
+     *   Questify.switchSlot(2); // 세 번째 캐릭터로 전환
+     *
+     * @param {number} index - 전환할 슬롯의 인덱스 (0부터 시작)
+     * @returns {boolean} 전환 성공 여부
+     */
+    function switchSlot(index) {
+        // 존재하지 않는 슬롯 인덱스를 요청한 경우
+        if (index < 0 || index >= state.characters.length) {
+            console.warn(
+                `[Questify] 슬롯 인덱스 ${index}은 유효하지 않습니다. ` +
+                `현재 슬롯 수: ${state.characters.length}`
+            );
+            return false;
+        }
+
+        // 이미 활성화된 슬롯을 다시 선택한 경우는 무시합니다.
+        if (index === state.activeSlot) return true;
+
+        state.activeSlot = index;
+        updateUI();
+        save();
+
+        return true;
+    }
+
+
+    /* =========================================================
+       ■ 데이터 저장 / 불러오기 (LocalStorage)
+    ========================================================= */
+
+    /**
+     * 현재 state 전체(슬롯 배열 + 활성 슬롯 인덱스)를 LocalStorage에 저장합니다.
+     */
+    function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    /**
+     * LocalStorage에서 이전에 저장된 state를 불러옵니다.
+     * 데이터가 없거나 손상된 경우 기본값(Lv.1 캐릭터 1개)으로 시작합니다.
+     *
+     * 구버전 데이터 호환 처리:
+     *   슬롯 시스템 도입 전 저장된 데이터( { level, xp } 형식)가 있으면
+     *   자동으로 슬롯 배열 형식으로 변환합니다.
+     */
+    function load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+
+            const parsed = JSON.parse(raw);
+
+            // 구버전 데이터 감지: characters 배열이 없으면 구버전입니다.
+            // 구버전 데이터를 슬롯 배열 형식으로 마이그레이션합니다.
+            if (parsed.level !== undefined && !parsed.characters) {
+                state.characters = [{ level: parsed.level, xp: parsed.xp || 0 }];
+                state.activeSlot = 0;
+                console.info('[Questify] 구버전 데이터를 슬롯 형식으로 변환했습니다.');
+            } else {
+                Object.assign(state, parsed);
+            }
+        } catch (e) {
+            console.warn('[Questify] 저장 데이터를 불러오지 못했습니다. 초기화합니다.');
+        }
+    }
+
+
+    /* =========================================================
+       ■ 공개 API (window.Questify)
+    ========================================================= */
+    window.Questify = {
+
+        /**
+         * ✅ 퀘스트 완료 시 호출하는 메인 API입니다.
+         *
+         * @param {'normal'|'challenge'} type
+         * @param {'easy'|'medium'|'hard'|'30min'|'1h'|'3h'} difficulty
+         *
+         * 사용 예시 1 - HTML onclick 속성:
+         *   <button onclick="Questify.completeQuest('normal', 'medium')">수락</button>
+         *
+         * 사용 예시 2 - JavaScript 이벤트 리스너:
+         *   btn.addEventListener('click', () => {
+         *       Questify.completeQuest('challenge', '1h');
+         *   });
+         *
+         * 사용 예시 3 - 타이머 담당 팀원이 추가할 위치:
+         *   // 타이머 종료 코드 바로 아래에 추가하면 됩니다.
+         *   Questify.completeQuest('challenge', '30min');
+         */
+        completeQuest(type, difficulty) {
+            const reward = XP_REWARDS[type]?.[difficulty];
+            if (!reward) {
+                console.warn(
+                    `[Questify] 알 수 없는 퀘스트 타입: "${type}/${difficulty}"\n` +
+                    `사용 가능한 값:\n` +
+                    `  normal    → easy, medium, hard\n` +
+                    `  challenge → 30min, 1h, 3h`
+                );
+                return;
+            }
+            gainXP(reward);
+        },
+
+        /**
+         * ✅ 새 캐릭터 슬롯을 추가합니다.
+         * 현재 캐릭터가 만렙(Lv.50)일 때만 가능합니다.
+         *
+         * UI 버튼 예시:
+         *   <button onclick="Questify.addSlot()">새 캐릭터 추가</button>
+         *
+         * 조건 확인 후 버튼 활성/비활성 처리 예시:
+         *   const info = Questify.getSlotInfo();
+         *   addSlotBtn.disabled = !info.canAddSlot;
+         *
+         * @returns {boolean} 성공 여부
+         */
+        addSlot,
+
+        /**
+         * ✅ 다른 슬롯으로 전환합니다.
+         * 인벤토리 UI나 슬롯 선택 버튼에서 사용합니다.
+         *
+         * 사용 예시:
+         *   Questify.switchSlot(0); // 첫 번째 캐릭터로 전환
+         *   Questify.switchSlot(1); // 두 번째 캐릭터로 전환
+         *
+         * @param {number} index - 전환할 슬롯 인덱스 (0부터 시작)
+         * @returns {boolean} 성공 여부
+         */
+        switchSlot,
+
+        /**
+         * 유니온 레벨을 반환합니다.
+         * 전체 슬롯의 레벨을 모두 합산한 값입니다.
+         *
+         * 사용 예시:
+         *   const union = Questify.getUnionLevel(); // 예: 74
+         *   unionLevelEl.textContent = `유니온 Lv.${union}`;
+         *
+         * @returns {number} 유니온 레벨
+         */
+        getUnionLevel,
+
+        /**
+         * 전체 캐릭터 슬롯 데이터를 배열로 반환합니다.
+         * 인벤토리 UI를 렌더링할 때 사용합니다.
+         *
+         * 반환 형태:
+         *   [
+         *     { level: 50, xp: 0 },  // 슬롯 0 (졸업)
+         *     { level: 23, xp: 180 },// 슬롯 1 (육성 중)
+         *     { level: 1,  xp: 0  }, // 슬롯 2 (신규)
+         *   ]
+         *
+         * @returns {Array<{level: number, xp: number}>}
+         */
+        getCharacters: () => state.characters.map(c => ({ ...c })),
+
+        /**
+         * 현재 활성 캐릭터 데이터를 반환합니다.
+         * 캐릭터 담당 팀원이 레벨에 따라 이미지를 교체할 때 사용합니다.
+         *
+         * 반환 형태: { level: 23, xp: 180 }
+         *
+         * @returns {{ level: number, xp: number }}
+         */
+        getActiveChar: () => ({ ...getCurrentChar() }),
+
+        /**
+         * 슬롯 현황 요약을 반환합니다.
+         * 슬롯 UI 버튼의 활성/비활성 처리에 사용합니다.
+         *
+         * 반환 형태:
+         *   {
+         *     activeSlot: 1,       // 현재 활성 슬롯 인덱스
+         *     totalSlots: 3,       // 현재 보유 슬롯 수
+         *     maxSlots: 10,        // 최대 슬롯 수
+         *     canAddSlot: false,   // 새 슬롯 추가 가능 여부
+         *     unionLevel: 74,      // 현재 유니온 레벨
+         *   }
+         */
+        getSlotInfo: () => ({
+            activeSlot:  state.activeSlot,
+            totalSlots:  state.characters.length,
+            maxSlots:    MAX_SLOTS,
+            // 새 슬롯을 추가할 수 있는 조건:
+            // 현재 캐릭터가 만렙이고, 아직 슬롯 여유가 있을 때
+            canAddSlot:  getCurrentChar().level >= MAX_LEVEL && state.characters.length < MAX_SLOTS,
+            unionLevel:  getUnionLevel(),
+        }),
+
+        /**
+         * 보상 테이블을 외부에서 읽을 수 있도록 노출합니다.
+         * 퀘스트 생성 UI에서 난이도별 XP를 안내할 때 참고하세요.
+         *
+         * 사용 예시:
+         *   Questify.XP_REWARDS.normal.hard    // → 25
+         *   Questify.XP_REWARDS.challenge['1h'] // → 60
+         */
+        XP_REWARDS,
+
+        /**
+         * ⚠️ 테스트 전용 - 모든 데이터를 초기화합니다.
+         * 배포 버전에서는 사용하지 마세요.
+         *
+         * 브라우저 콘솔에서 실행:
+         *   Questify.reset()
+         */
+        reset() {
+            localStorage.removeItem(STORAGE_KEY);
+            state = { characters: [{ level: 1, xp: 0 }], activeSlot: 0 };
+            updateUI();
+            console.log('[Questify] 데이터가 초기화되었습니다.');
+        },
+    };
+
+
+    /* =========================================================
+       ■ 실행 진입점
+    ========================================================= */
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+})();
