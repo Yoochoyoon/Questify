@@ -27,8 +27,7 @@
           </div>
         </div>
         <div id="draggable-character">
-          <div class="char-head"></div>
-          <div class="char-body"></div>
+          <div class="char-body"><img src="chrSD.png" alt="캐릭터SD" style="width: 30%;"></div>
         </div>
       </div>
 
@@ -37,11 +36,12 @@
         <div class="timer-layout">
           <div class="timer-top">
             <div id="speech-bubble">
-              <div class="bubble"></div>
+              <div class="bubble">
+                <p>타이머로 공부 시간을 설정하자!</p>
+              </div>
             </div>
             <div class="timer-character">
-              <div class="char-head"></div>
-              <div class="char-body"></div>
+              <div class="char-body"><img src="chrLD.png" alt="" style="width: 200px;"></div>
             </div>
           </div>
           <div class="timer-card">
@@ -111,23 +111,25 @@
       </div>
 
       <div id="open-timer-btn">
-        <div class="mark-a"></div>
-        <div class="mark-b"></div>
-        <div class="mark-c"></div>
+        <img src="타이머.png" alt="timer-icon" style="width: 50px;">
+
       </div>
 
       <div id="bottom-tab-bar">
         <div id="tab-quest" class="tab active">
           <div class="tab-ui-highlight"></div>
-          일일퀘스트</div>
+          일일퀘스트
+        </div>
         <div id="tab-storage" class="tab">
           <div class="tab-ui-highlight"></div>
-          문제저장소</div>
+          문제저장소
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+
     (function () {
       'use strict';
       const MAX_LEVEL = 50;
@@ -350,8 +352,8 @@
           //삭제버튼
           (item.status !== 'clear' ? '<button onclick="handleTodoAction(' + item.id + ', \'delete\')" id = "del" class="mini-btn"><span>삭제</span></button>' : '') +
           //완료버튼
-          (item.status !== 'clear' ? '<button onclick="handleTodoAction(' + item.id + ', \'clear\')" id = "suc" class="mini-btn"><span>성공</span></button>' : 
-          '<span style = "color: white; opacity: 25%">성공!</span>') +
+          (item.status !== 'clear' ? '<button onclick="handleTodoAction(' + item.id + ', \'clear\')" id = "suc" class="mini-btn"><span>성공</span></button>' :
+            '<span style = "color: white; opacity: 25%">성공!</span>') +
           '</div>';
         if (item.status !== 'clear') {
           card.addEventListener('dragstart', handleDragStart);
@@ -394,7 +396,7 @@
         const card = document.createElement('div');
         card.className = 'storage-card';
         card.onclick = event => openEditModal(quiz.id, event);
-        card.innerHTML = '<div class="storage-title">' + escapeHTML(quiz.title) + 
+        card.innerHTML = '<div class="storage-title">' + escapeHTML(quiz.title) +
           '</div><div class="storage-bottom"><span class="storage-tag">저장된 문제</span><div class="storage-actions"><button id = "Pdel" class="mini-btn" onclick="event.stopPropagation(); deleteQuizFromStorage(' + quiz.id + ')">삭제</button><button id = "Bstorage" class="mini-btn" onclick="event.stopPropagation(); openSolveModalFromStorage(' + quiz.id + ')">다시풀기</button></div></div>';
         container.appendChild(card);
       });
