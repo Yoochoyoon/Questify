@@ -80,6 +80,8 @@
       overflow: hidden;
       background-image: url('https://i.pinimg.com/736x/c0/2d/62/c02d62b2913dd06ae163add8da0e0b7f.jpg');
       background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
     }
 
     .hidden {
