@@ -16,7 +16,12 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: #d1d5db;
+      background-image: url('bg.png');
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+
+      backdrop-filter: blur(3px) brightness(0.7);
       font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       user-select: none;
     }
@@ -329,28 +334,28 @@
     }
 
 
-#speech-bubble{
-  width: 300px;
-  height: 100px;
+    #speech-bubble {
+      width: 300px;
+      height: 100px;
 
-  border-radius: 20px;
+      border-radius: 20px;
 
-  display:flex;
-  justify-content:center;
-  align-items:center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
 
-  text-align: center;
-}
+      text-align: center;
+    }
 
-.bubble{
-  display:flex;
-  justify-content:center;
-  align-items:center;
+    .bubble {
+      display: flex;
+      justify-content: center;
+      align-items: center;
 
-  text-align:center;
+      text-align: center;
 
-  
-}
+
+    }
 
 
 
@@ -1412,7 +1417,7 @@
         max-width: 420px;
         height: 100%;
       }
-      
+
 
       .bubble {
         position: relative;
@@ -1424,6 +1429,7 @@
         background: #F8EEDF;
         border-radius: 113px;
       }
+
       /* 모바일 환경에서 말풍선 사라짐, 텍스트 남음 버그*/
 
       .bubble::after {
