@@ -2,6 +2,7 @@
 <html lang="ko">
 
 <head>
+  <!-- [문서 메타데이터] 인코딩 및 모바일 기기 화면 배율 고정 (사용자 임의 확대 방지) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Questify</title>
@@ -9,10 +10,19 @@
 </head>
 
 <body>
+  <!-- [앱 루트 영역] 좌/우측 분할 패널을 전체적으로 담는 컨테이너 -->
   <div class="app">
+
+    <!-- ==========================================================================
+         [좌측 영역] 메인 게임 로비 / 타이머 화면 / 상호작용 모달 창 표시 영역
+         ========================================================================== -->
     <div id="left-panel" class="panel">
+
+      <!-- 1. 메인 게임 화면: 상단 HUD 및 캐릭터들이 렌더링되는 기본 무대 -->
       <div id="game-screen" class="screen">
+        <!-- 상태 표시줄 (HUD): 오늘의 퀘스트 진행도 및 전체 유니온 달성도 정보 -->
         <div class="top-hud">
+          <!-- 상단 좌측: 일일퀘스트 진행도 바 -->
           <div>
             <h2 class="goal-title">오늘의 목표</h2>
             <div class="progress-wrap">
@@ -20,30 +30,33 @@
               <span id="progress-text">0/0</span>
             </div>
           </div>
+          <!-- 상단 우측: 전체 유니온(계정) 경험치 및 레벨 총합 정보 카드 -->
           <div id="user-profile-card">
-            <div class="profile-name">내이름은여덟글자</div>
-            <div class="profile-level">Lv.1</div>
-            <div class="xp-bar"></div>
+            <div class="profile-name">유니온(전체) 현황</div>
+            <div class="profile-level" id="union-level-hud">유니온 Lv.1</div>
           </div>
         </div>
-        <div id="draggable-character">
-          <div class="char-body"><img src="chrSD.png" alt="캐릭터SD" style="width: 30%;"></div>
-        </div>
+
+        <!-- 로비 캐릭터 컨테이너: JS 스크립트에 의해 동적으로 캐릭터 DOM이 생성되어 주입되는 노드 -->
+        <div id="lobby-container"></div>
       </div>
 
+      <!-- 2. 집중 타이머 화면: 학습 시간을 측정하고 관리하는 독립적인 오버레이 뷰 -->
       <div id="timer-screen" class="screen hidden">
         <button id="close-timer-btn" class="round-close">X</button>
         <div class="timer-layout">
+          <!-- 타이머 상단: 캐릭터 및 안내 말풍선 출력 구역 -->
           <div class="timer-top">
             <div id="speech-bubble">
               <div class="bubble">
-                <p>타이머로 공부 시간을 설정하자!</p>
+                <p style="margin:0;">타이머로 공부 시간을 설정하자!</p>
               </div>
             </div>
             <div class="timer-character">
-              <div class="char-body"><img src="chrLD.png" alt="" style="width: 200px;"></div>
+              <div class="char-body"><img src="chrLD.png" alt="캐릭터LD"></div>
             </div>
           </div>
+          <!-- 타이머 조작 카드: 목표 시간 세팅, 시간 추가 버튼, 시작 및 초기화 액션 -->
           <div class="timer-card">
             <div class="timer-display-wrap">
               <input id="timer-display" type="text" value="00:00:00" inputmode="numeric" maxlength="8">
@@ -61,16 +74,30 @@
         </div>
       </div>
 
-      <div id="modal-overlay">
-        <div id="create-modal" class="modal-content hidden">
+      <!-- 3. 메인 모달 오버레이 배경: 메모장, 문제 풀이창 등 주요 기능을 팝업으로 띄울 때 사용 -->
+      <div id="modal-overlay" class="hidden">
+
+        <!-- 특정 캐릭터를 대상으로 기록해둔 학습 메모들의 리스트를 조회하는 모달 -->
+        <div id="char-memo-modal" class="modal-content hidden">
           <button class="close-modal-btn">X</button>
-          <input id="input-quiz-title" class="field" type="text" maxlength="27"
-            placeholder="문제 목록에 표시될 제목을 적어주세요. (최대 27글자)">
-          <textarea id="input-quiz-content" class="area" placeholder="질문을 적어주세요."></textarea>
-          <input id="input-quiz-answer" class="field" type="text" placeholder="정답을 적어주세요.">
-          <button id="btn-submit-create" class="submit-btn">제작</button>
+          <h2 id="char-memo-title" style="text-align:center; margin-top:0;">학습 메모</h2>
+          <div id="char-memo-list"
+            style="flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding: 2px;">
+          </div>
+          <button id="btn-open-notepad" class="submit-btn" style="width:100%; margin-top:auto;">+ 새 메모 작성</button>
         </div>
 
+        <!-- 사용자가 학습한 내용을 저장하여 AI 생성의 데이터로 쓰는 메모 입력창 -->
+        <div id="notepad-modal" class="modal-content hidden">
+          <button class="close-modal-btn">X</button>
+          <h2 style="text-align:center; margin-top:0;">학습 메모장</h2>
+          <div style="font-size:12px; color:#4b5563; margin-bottom:8px; text-align:center;"
+            id="notepad-target-char-label"></div>
+          <textarea id="input-notepad-content" class="area" placeholder="공부한 내용을 이곳에 메모하세요!"></textarea>
+          <button id="btn-submit-notepad" class="submit-btn" style="background:#59A3F8; margin-top:auto;">저장</button>
+        </div>
+
+        <!-- AI가 자동 생성한 문제의 내용을 확인하고 정답을 입력하는 풀이 모달 -->
         <div id="solve-modal" class="modal-content hidden">
           <button class="close-modal-btn">X</button>
           <div id="solve-quiz-title" class="fake-field">문제 제목</div>
@@ -79,9 +106,11 @@
             <input id="input-solve-answer" class="field" type="text" placeholder="정답을 적어주세요.">
             <button id="btn-grade-problem" class="submit-btn">채점</button>
           </div>
+          <!-- 채점 결과를 보여주기 위한 결과 전용 영역 (정답/오답) -->
           <div id="solve-result-state" class="hidden"></div>
         </div>
 
+        <!-- 현재 앱에 존재하는 전체 캐릭터(슬롯)를 관리하고 데이터를 통제하는 종합 모달 -->
         <div id="slot-modal" class="modal-content hidden">
           <button class="close-modal-btn">X</button>
           <h2 id="union-level-display">전체 유니온 Lv.0</h2>
@@ -92,29 +121,77 @@
           </div>
         </div>
       </div>
+
+      <!-- 4. 공용 다이얼로그 오버레이: 브라우저 기본(alert/prompt 등)을 대체하는 미니 커스텀 팝업층 -->
+      <div id="dialog-overlay" class="hidden">
+
+        <!-- 단순 정보 전달용 커스텀 Alert -->
+        <div id="custom-alert" class="modal-content modal-mini hidden">
+          <h3 style="text-align:center; margin-top:0;">알림</h3>
+          <p id="custom-alert-msg"
+            style="text-align:center; margin-bottom: 20px; font-size: 14px; white-space: pre-line; word-break: keep-all;">
+          </p>
+          <button id="custom-alert-btn" class="submit-btn" style="width: 100%; margin-top:auto;">확인</button>
+        </div>
+
+        <!-- 삭제 등 중요 행동 전 의사결정을 묻는 커스텀 Confirm -->
+        <div id="custom-confirm" class="modal-content modal-mini hidden">
+          <h3 style="text-align:center; margin-top:0;">확인</h3>
+          <p id="custom-confirm-msg"
+            style="text-align:center; margin-bottom: 20px; font-size: 14px; white-space: pre-line; word-break: keep-all;">
+          </p>
+          <div style="display:flex; gap:10px; margin-top:auto;">
+            <button id="custom-confirm-cancel" class="danger-btn" style="flex:1;">취소</button>
+            <button id="custom-confirm-ok" class="submit-btn" style="flex:1;">확인</button>
+          </div>
+        </div>
+
+        <!-- 사용자에게 텍스트 데이터를 입력받는 커스텀 Prompt -->
+        <div id="custom-prompt" class="modal-content modal-mini hidden">
+          <h3 id="custom-prompt-title" style="text-align:center; margin-top:0;">입력</h3>
+          <input type="text" id="custom-prompt-input" class="field" style="margin-bottom: 20px;">
+          <div style="display:flex; gap:10px; margin-top:auto;">
+            <button id="custom-prompt-cancel" class="danger-btn" style="flex:1;">취소</button>
+            <button id="custom-prompt-ok" class="submit-btn" style="flex:1;">확인</button>
+          </div>
+        </div>
+
+        <!-- 옵션 중 하나를 고르도록 강제하는 커스텀 Select 드롭다운 -->
+        <div id="custom-select" class="modal-content modal-mini hidden">
+          <h3 id="custom-select-title" style="text-align:center; margin-top:0;">선택</h3>
+          <p id="custom-select-msg"
+            style="text-align:center; margin-bottom: 12px; font-size: 14px; white-space: pre-line;"></p>
+          <select id="custom-select-input" class="field" style="margin-bottom: 20px;"></select>
+          <button id="custom-select-ok" class="submit-btn" style="width: 100%; margin-top:auto;">확인</button>
+        </div>
+      </div>
     </div>
 
+    <!-- ==========================================================================
+         [우측 영역] 일일 퀘스트(할 일) & 문제 저장소(인벤토리) 관리 패널
+         ========================================================================== -->
     <div id="right-panel-wrapper" class="panel">
+      <!-- 모바일 기기에서 좌/우 화면을 전환하기 위한 햄버거 토글 버튼 -->
       <button id="mobile-toggle-btn">☰</button>
 
+      <!-- 일일퀘스트 탭 뷰: 현재 진행/완료된 TODO 목록과 조작 기능 제공 -->
       <div id="panel-quest" class="panel-view">
         <h1 class="panel-title">일일퀘스트</h1>
-        <div class="surprise-wrap">
-          <button id="btn-trigger-surprise">랜덤 퀴즈</button>
-        </div>
         <div id="quest-list-container" class="list"></div>
       </div>
 
+      <!-- 문제저장소 탭 뷰: AI가 생성한 문제를 보관하고 삭제/풀이로 진입하는 공간 -->
       <div id="panel-storage" class="panel-view hidden">
         <h1 class="panel-title">문제저장소</h1>
         <div id="storage-list-container" class="list"></div>
       </div>
 
+      <!-- 항상 우측 하단에 위치하여 타이머 화면을 즉시 호출할 수 있는 플로팅 버튼 -->
       <div id="open-timer-btn">
         <img src="타이머.png" alt="timer-icon" style="width: 50px;">
-
       </div>
 
+      <!-- 하단 탭 내비게이션 바: 퀘스트 목록과 저장소 목록 간의 화면 전환 트리거 -->
       <div id="bottom-tab-bar">
         <div id="tab-quest" class="tab active">
           <div class="tab-ui-highlight"></div>
@@ -128,37 +205,35 @@
     </div>
   </div>
 
+  <!-- 
+    ========================================================================== 
+    [시스템 스크립트 파트 1] 데이터 상태 관리 (캐릭터 유니온 및 경험치)
+    ========================================================================== 
+  -->
   <script>
-
     (function () {
       'use strict';
+
+      // 앱의 시스템 한계 설정: 캐릭터 최대 도달 가능 레벨
       const MAX_LEVEL = 50;
-      const MAX_SLOTS = 10;
-      const STORAGE_KEY = 'questify_player_v2';
-      let state = { characters: [{ level: 1, xp: 0 }], activeSlot: 0 };
+      // 캐릭터 유니온 데이터를 로컬 스토리지에 유지하기 위한 고유 키
+      const STORAGE_KEY = 'questify_player_v3';
+
+      // 초기 기본 상태값: 앱 첫 구동 시 생성되는 기본 캐릭터 정보 
+      let state = {
+        characters: [{ name: '기본 목표', level: 1, xp: 0, x: 50, y: 80, showExclamation: false }]
+      };
+
+      // 잦은 접근이 필요한 동적 DOM 요소의 참조를 캐싱하는 공간
       const DOM = {};
 
-      function getCurrentChar() { return state.characters[state.activeSlot]; }
+      // 경험치 요구량 계산 로직 (기존 로직 유지)
       function getXpRequired(level) { return level >= MAX_LEVEL ? Infinity : 100; }
+
+      // 보유한 전체 캐릭터들의 레벨 합산 (유니온 시스템 총 레벨 도출)
       function getUnionLevel() { return state.characters.reduce((sum, char) => sum + char.level, 0); }
 
-      function connectLevelUI() {
-        DOM.levelEl = document.querySelector('.profile-level');
-      }
-
-      function injectXPBarFill() {
-        const xpBarContainer = document.querySelector('.xp-bar');
-        if (!xpBarContainer) return;
-        xpBarContainer.style.position = 'relative';
-        xpBarContainer.style.overflow = 'hidden';
-        DOM.xpFill = document.createElement('div');
-        DOM.xpFill.style.cssText = 'position:absolute; inset:0; width:0%; background: rgb(0, 255, 0); transition:width .5s ease;';
-        xpBarContainer.appendChild(DOM.xpFill);
-        DOM.xpText = document.createElement('div');
-        DOM.xpText.style.cssText = 'font-size:9px; color: lightgray; font-weight:900; margin-top:2px;';
-        xpBarContainer.parentElement.appendChild(DOM.xpText);
-      }
-
+      // 플레이 경험치(XP) 획득 시 텍스트가 위로 떠오르는 시각 효과 레이어 생성
       function createFloatLayer() {
         const gameScreen = document.getElementById('game-screen');
         DOM.floatLayer = document.createElement('div');
@@ -166,137 +241,241 @@
         gameScreen.appendChild(DOM.floatLayer);
       }
 
+      // 화면에 노출된 유니온 레벨과 렌더링된 로비 캐릭터 상태를 최신화하여 화면 갱신
       function updateUI() {
-        const char = getCurrentChar();
-        const isMax = char.level >= MAX_LEVEL;
-        const required = isMax ? 0 : getXpRequired(char.level);
-        const pct = isMax ? 100 : (char.xp / required * 100);
-        if (DOM.levelEl) DOM.levelEl.textContent = 'Lv.' + char.level;
-        if (DOM.xpFill) DOM.xpFill.style.width = pct + '%';
-        if (DOM.xpText) DOM.xpText.textContent = isMax ? 'MAX | 유니온 Lv.' + getUnionLevel() : char.xp + ' / ' + required + ' XP | 유니온 Lv.' + getUnionLevel();
-        syncCharacterGraphic();
+        const unionElHUD = document.getElementById('union-level-hud');
+        if (unionElHUD) unionElHUD.textContent = '유니온 Lv.' + getUnionLevel();
+        if (typeof renderLobbyCharacters === 'function') renderLobbyCharacters();
       }
 
-      function syncCharacterGraphic() {
-        const body = document.querySelector('#draggable-character .char-body');
-        if (!body) return;
-        const level = getCurrentChar().level;
-        body.style.background = level >= 40 ? '#f87171' : level >= 20 ? '#fcd34d' : level >= 10 ? '#93c5fd' : '#f3f4f6';
+      // XP 획득 및 레벨업 판별 처리를 위한 핵심 데이터 조작 함수
+      function gainXP(amount, charIdx = 0) {
+        if (charIdx >= state.characters.length) charIdx = 0;
+        const char = state.characters[charIdx];
+
+        // 만렙 도달 시 경험치 누적 방지 및 안내 텍스트
+        if (char.level >= MAX_LEVEL) { showFloat('만렙 달성!', false, charIdx); return; }
+
+        showFloat('+' + amount + ' XP', false, charIdx);
+        char.xp += amount;
+
+        // 초과 경험치를 통한 반복적 레벨업 (Level Up) 일괄 계산 처리
+        while (char.level < MAX_LEVEL && char.xp >= getXpRequired(char.level)) {
+          char.xp -= getXpRequired(char.level);
+          char.level++;
+          showFloat('Lv.' + char.level + ' 달성!', true, charIdx);
+        }
+
+        if (char.level >= MAX_LEVEL) char.xp = 0;
+        updateUI();
+        save();
       }
 
-      function showFloat(text, isLevelUp) {
+      // 플로팅 애니메이션 실행: 지정된 캐릭터의 머리 위로 안내 문구 DOM을 동적 생성 후 삭세
+      function showFloat(text, isLevelUp, charIdx = 0) {
         if (!DOM.floatLayer) return;
+        const charEl = document.querySelector(`.lobby-char[data-idx="${charIdx}"]`);
+        let left = '50%', top = '50%';
+        if (charEl) {
+          left = charEl.style.left;
+          top = charEl.style.top;
+        }
+
         const el = document.createElement('div');
         el.textContent = text;
-        el.style.cssText = 'position:absolute; left:50%; top:50%; font-size:' + (isLevelUp ? '24px' : '16px') + '; font-weight:900; color:' + (isLevelUp ? '#2563eb' : '#111') + '; text-shadow:1.5px 1.5px 0 #fff,-1.5px -1.5px 0 #fff,1.5px -1.5px 0 #fff,-1.5px 1.5px 0 #fff; white-space:nowrap; animation:xpFloatUp 1.4s ease-out forwards;';
+        // 시각적 가시성을 위한 텍스트 테두리(shadow) 및 애니메이션 적용
+        el.style.cssText = `position:absolute; left:${left}; top:${top}; transform:translate(-50%,-100%); font-size:${isLevelUp ? '24px' : '16px'}; font-weight:900; color:${isLevelUp ? '#2563eb' : '#111'}; text-shadow:1.5px 1.5px 0 #fff,-1.5px -1.5px 0 #fff,1.5px -1.5px 0 #fff,-1.5px 1.5px 0 #fff; white-space:nowrap; animation:xpFloatUp 1.4s ease-out forwards;`;
         DOM.floatLayer.appendChild(el);
         setTimeout(() => el.remove(), 1500);
       }
 
-      function gainXP(amount) {
-        const char = getCurrentChar();
-        if (char.level >= MAX_LEVEL) { showFloat('만렙! 새 캐릭터를 추가하세요.'); return; }
-        showFloat('+' + amount + ' XP');
-        char.xp += amount;
-        while (char.level < MAX_LEVEL && char.xp >= getXpRequired(char.level)) {
-          char.xp -= getXpRequired(char.level);
-          char.level++;
-          onLevelUp();
-        }
-        if (char.level >= MAX_LEVEL) {
-          char.xp = 0;
-          showFloat('Lv.' + MAX_LEVEL + ' 졸업!', true);
-          setTimeout(() => showFloat(state.characters.length < MAX_SLOTS ? '새 캐릭터를 추가할 수 있습니다!' : '유니온 Lv.' + getUnionLevel() + ' 달성!', true), 1000);
-        }
-        updateUI();
-        save();
-      }
-
-      function onLevelUp() {
-        const char = getCurrentChar();
-        showFloat('Lv.' + char.level + ' 달성!', true);
-        if (DOM.levelEl) {
-          DOM.levelEl.style.animation = 'none';
-          requestAnimationFrame(() => { DOM.levelEl.style.animation = 'xpLevelPop .5s ease'; });
-        }
-      }
-
-      function addSlot() {
-        if (getCurrentChar().level < MAX_LEVEL || state.characters.length >= MAX_SLOTS) return false;
-        state.characters.push({ level: 1, xp: 0 });
-        state.activeSlot = state.characters.length - 1;
-        showFloat('새 캐릭터 등장!', true);
-        updateUI();
-        save();
-        return true;
-      }
-
-      function switchSlot(index) {
-        if (index < 0 || index >= state.characters.length || index === state.activeSlot) return false;
-        state.activeSlot = index;
-        updateUI();
-        save();
-        return true;
-      }
-
+      // 브라우저의 localStorage로 유니온 데이터를 저장 직렬화
       function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+      // 브라우저 캐시에서 유니온 데이터를 파싱하고, 좌표 등 비정상 값 방어 처리 후 복원
       function load() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return;
-          const parsed = JSON.parse(raw);
-          if (parsed.level !== undefined && !parsed.characters) {
-            state.characters = [{ level: parsed.level, xp: parsed.xp || 0 }];
-            state.activeSlot = 0;
-          } else {
-            Object.assign(state, parsed);
+          if (raw) {
+            const loadedState = JSON.parse(raw);
+            if (loadedState.characters && loadedState.characters.length > 0) {
+              state.characters = loadedState.characters;
+              state.characters.forEach(c => {
+                if (typeof c.x !== 'number' || isNaN(c.x)) c.x = 50;
+                if (typeof c.y !== 'number' || isNaN(c.y)) c.y = 80;
+              });
+            }
           }
         } catch (e) {
           console.warn('Init error', e);
         }
       }
 
+      // 독립 컨텍스트로 구성된 시스템 로직을 글로벌 객체 속성에 연결시켜 다른 스크립트 파일이 호출 가능하게 세팅
       window.Questify = {
         gainXP,
-        addSlot,
-        switchSlot,
         getUnionLevel,
-        getCharacters: () => state.characters.map(c => ({ ...c })),
-        getActiveChar: () => ({ ...getCurrentChar() }),
-        getSlotInfo: () => ({
-          activeSlot: state.activeSlot,
-          totalSlots: state.characters.length,
-          maxSlots: MAX_SLOTS,
-          canAddSlot: getCurrentChar().level >= MAX_LEVEL && state.characters.length < MAX_SLOTS,
-          unionLevel: getUnionLevel()
-        }),
+        getXpRequired,
+        getCharacters: () => state.characters,
+        saveState: save,
+        updateUI: updateUI,
         reset() {
           localStorage.removeItem(STORAGE_KEY);
-          state = { characters: [{ level: 1, xp: 0 }], activeSlot: 0 };
+          state = { characters: [{ name: '기본 목표', level: 1, xp: 0, x: 50, y: 80, showExclamation: false }] };
           updateUI();
         }
       };
 
-      connectLevelUI();
-      injectXPBarFill();
+      // 스크립트 로드 시 초기 준비 과정: 레이어 생성 -> 과거 캐시 로드 -> 첫 화면 렌더링
       createFloatLayer();
       load();
-      updateUI();
+      setTimeout(updateUI, 50);
     })();
   </script>
 
+  <!-- 
+    ========================================================================== 
+    [시스템 스크립트 파트 2] 앱 메인 인터페이스 및 DOM 조작 로직
+    ========================================================================== 
+  -->
   <script>
-    const APP_DATA_KEY = 'questify_app_data_v1';
-    let todoList = [];
-    let quizStorage = [];
-    let currentActiveQuiz = null;
-    let pendingMassiveReward = false;
-    let editingQuizId = null;
+    /* --------------------------------------------------------------------------
+       [2-1] 커스텀 다이얼로그 (브라우저 Alert/Confirm/Prompt 등 우회 기능)
+       -------------------------------------------------------------------------- */
+    // 콜백 함수를 보관하는 변수 (버튼 클릭 시 트리거)
+    let customAlertCb, customConfirmCb, customPromptCb, customSelectCb;
+    const dialogOverlay = document.getElementById('dialog-overlay');
 
+    // 열려있는 대화상자를 일괄 초기화(숨김) 하는 유틸
+    function closeAllDialogs() {
+      document.querySelectorAll('#dialog-overlay .modal-content').forEach(m => m.classList.add('hidden'));
+    }
+
+    // 지정된 ID의 다이얼로그만을 화면 전면에 출력하는 함수
+    function openSpecificDialog(dialogId) {
+      dialogOverlay.classList.remove('hidden');
+      closeAllDialogs();
+      document.getElementById(dialogId).classList.remove('hidden');
+    }
+
+    // 1버튼 정보 전달 팝업 - window.alert 대체
+    window.showCustomAlert = function (msg, callback) {
+      document.getElementById('custom-alert-msg').innerText = msg;
+      customAlertCb = callback;
+      openSpecificDialog('custom-alert');
+    }
+    document.getElementById('custom-alert-btn').onclick = () => {
+      dialogOverlay.classList.add('hidden');
+      if (customAlertCb) customAlertCb();
+    }
+
+    // 2버튼 의사결정 팝업 - window.confirm 대체
+    window.showCustomConfirm = function (msg, onConfirm) {
+      document.getElementById('custom-confirm-msg').innerText = msg;
+      customConfirmCb = onConfirm;
+      openSpecificDialog('custom-confirm');
+    }
+    document.getElementById('custom-confirm-cancel').onclick = () => dialogOverlay.classList.add('hidden');
+    document.getElementById('custom-confirm-ok').onclick = () => {
+      dialogOverlay.classList.add('hidden');
+      if (customConfirmCb) customConfirmCb();
+    }
+
+    // 텍스트 반환 입력창 - window.prompt 대체
+    window.showCustomPrompt = function (title, defaultVal, onConfirm) {
+      document.getElementById('custom-prompt-title').innerText = title;
+      const input = document.getElementById('custom-prompt-input');
+      input.value = defaultVal || '';
+      customPromptCb = onConfirm;
+      openSpecificDialog('custom-prompt');
+      setTimeout(() => input.focus(), 50); // 출력 직후 자동 포커싱
+    }
+    document.getElementById('custom-prompt-cancel').onclick = () => dialogOverlay.classList.add('hidden');
+    document.getElementById('custom-prompt-ok').onclick = () => {
+      const val = document.getElementById('custom-prompt-input').value;
+      dialogOverlay.classList.add('hidden');
+      if (customPromptCb) customPromptCb(val);
+    }
+
+    // 리스트 옵션 반환창 (HTML select/option 구조 활용)
+    window.showCustomSelect = function (title, msg, options, onConfirm) {
+      document.getElementById('custom-select-title').innerText = title;
+      document.getElementById('custom-select-msg').innerText = msg;
+      const select = document.getElementById('custom-select-input');
+      select.innerHTML = '';
+
+      // 전달받은 객체 배열로 선택 옵션 요소 동적 할당
+      options.forEach(opt => {
+        const el = document.createElement('option');
+        el.value = opt.value;
+        el.innerText = opt.text;
+        select.appendChild(el);
+      });
+
+      customSelectCb = onConfirm;
+      openSpecificDialog('custom-select');
+    }
+    document.getElementById('custom-select-ok').onclick = () => {
+      const val = document.getElementById('custom-select-input').value;
+      dialogOverlay.classList.add('hidden');
+      if (customSelectCb) customSelectCb(val);
+    }
+
+    /* --------------------------------------------------------------------------
+       [2-2] 메인 모달 (학습, 퀴즈, 슬롯 관리) 오버레이 제어
+       -------------------------------------------------------------------------- */
+    const modalOverlay = document.getElementById('modal-overlay');
+
+    // 열려있는 메인 모달창 일괄 해제
+    function closeAllCustomModals() {
+      document.querySelectorAll('#modal-overlay .modal-content').forEach(m => m.classList.add('hidden'));
+    }
+
+    // 특정 작업 모달 렌더링 진입점
+    function openSpecificModal(modalId) {
+      modalOverlay.classList.remove('hidden');
+      closeAllCustomModals();
+      document.getElementById(modalId).classList.remove('hidden');
+    }
+
+    // 모든 모달 닫기(X) 버튼의 이벤트를 바인딩 및 전역 퀴즈/메모 편집 상태값 초기화
+    document.querySelectorAll('.close-modal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modalOverlay.classList.add('hidden');
+        currentActiveQuiz = null;
+        editingMemoId = null;
+      });
+    });
+
+    // 모달 컨텐츠 외부 배경 영역 터치 시 닫기 동작 지원
+    modalOverlay.addEventListener('mousedown', (e) => {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.add('hidden');
+        currentActiveQuiz = null;
+        editingMemoId = null;
+      }
+    });
+
+    /* --------------------------------------------------------------------------
+       [2-3] 핵심 앱 콘텐츠 데이터 (할 일/메모/문제 저장소) 선언 및 로드
+       -------------------------------------------------------------------------- */
+    // 앱의 주요 저장 기록을 구분하는 로컬스토리지 전용 식별 키
+    const APP_DATA_KEY = 'questify_app_data_v4';
+
+    let todoList = [];       // 일일퀘스트 목록 보관소
+    let memoStorage = [];    // 캐릭터별 학습 기록 메모 보관소
+    let quizStorage = [];    // AI 자동 생성 문제 보관소
+
+    let currentActiveQuiz = null;   // 진행/활성화 중인 퀴즈의 임시 메타데이터
+    let targetCharIdxForMemo = 0;   // 메모를 타겟팅한 캐릭터의 배열 인덱스
+    let editingMemoId = null;       // 메모 수정 시 식별할 대상의 ID
+
+    // HTML 요소에 악의적인 스크립트가 실행되지 않도록 특수 문자를 필터링(Escape)
     function escapeHTML(value) {
       return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
     }
 
+    // 캐시에서 JSON 형태의 앱 데이터를 안전하게 가져와 배열 복원
     function loadAppData() {
       try {
         const data = localStorage.getItem(APP_DATA_KEY);
@@ -304,40 +483,40 @@
           const parsed = JSON.parse(data);
           todoList = parsed.todoList || [];
           quizStorage = parsed.quizStorage || [];
+          memoStorage = parsed.memoStorage || [];
         }
-      } catch (e) {
-        console.warn('App data load failed', e);
-      }
+      } catch (e) { }
     }
 
+    // 현재의 데이터 배열을 로컬스토리지에 전체 덮어쓰기 형태로 병합 저장
     function saveAppData() {
-      localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage }));
+      localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage, memoStorage }));
     }
 
+    // UI 동기화를 담당하는 최상위 마스터 렌더 함수 
     function renderAll() {
       renderTodoList();
       renderStorageList();
       updateProgressBar();
       saveAppData();
+      syncExclamations(); // 알림 상태 아이콘 검증
+      if (window.Questify) window.Questify.updateUI(); // 글로벌 로비 렌더 강제 요청
     }
 
+    /* --------------------------------------------------------------------------
+       [2-4] 일일 퀘스트 (TODO 리스트) 컨트롤
+       -------------------------------------------------------------------------- */
+    // TODO 뷰를 화면에 출력 (드래그 정렬 및 삭제/완료 동작 지원)
     function renderTodoList() {
       const container = document.getElementById('quest-list-container');
       container.innerHTML = '';
-      const quizzes = todoList.filter(item => item.type === 'quiz');
       const todos = todoList.filter(item => item.type === 'todo');
 
+      // 리스트 정렬: 완료(Clear) 상태의 카드는 목록 최하단으로 밀어냄
       todos.sort((a, b) => {
         if (a.status === 'clear' && b.status !== 'clear') return 1;
         if (a.status !== 'clear' && b.status === 'clear') return -1;
         return 0;
-      });
-
-      quizzes.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'quiz-card';
-        card.innerHTML = '<div class="quiz-top"><span class="quiz-label">[랜덤 퀴즈]</span><button onclick="openSolveModalFromQuest(' + item.id + ')">도전하기!</button></div><input type="text" value="' + escapeHTML(item.title) + '" readonly>';
-        container.appendChild(card);
       });
 
       todos.forEach(item => {
@@ -345,323 +524,617 @@
         card.className = 'todo-card draggable-todo-item' + (item.status === 'clear' ? ' clear' : '');
         card.dataset.id = item.id;
         card.dataset.status = item.status;
+
+        // 클리어하지 않은 항목에 대해서만 드래그 조작 속성을 허용
         if (item.status !== 'clear') card.draggable = true;
-        card.innerHTML = '<div style="display:flex; align-items:center; width:100%;">' +
-          (item.status !== 'clear' ? '<span class="drag-handle">≡</span>' : '') +
-          '<input type="text" value="' + escapeHTML(item.title) + '" readonly></div><div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">' +
-          //삭제버튼
-          (item.status !== 'clear' ? '<button onclick="handleTodoAction(' + item.id + ', \'delete\')" id = "del" class="mini-btn"><span>삭제</span></button>' : '') +
-          //완료버튼
-          (item.status !== 'clear' ? '<button onclick="handleTodoAction(' + item.id + ', \'clear\')" id = "suc" class="mini-btn"><span>성공</span></button>' :
-            '<span style = "color: white; opacity: 25%">성공!</span>') +
-          '</div>';
+
+        const isEditing = item.isEditing ? '' : 'readonly';
+        const placeholder = item.isEditing ? '내용을 적고 Enter를 누르세요' : '';
+
+        card.innerHTML = `
+          <div style="display:flex; align-items:center; width:100%; overflow:hidden;">
+            ${item.status !== 'clear' ? '<span class="drag-handle">≡</span>' : ''}
+            <div style="display:flex; flex-direction:column; width:100%;">
+              <input type="text" class="inline-todo-input" value="${escapeHTML(item.title || '')}" ${isEditing} placeholder="${placeholder}"
+                onclick="if(this.readOnly) makeTodoEditable(${item.id})"
+                onblur="saveTodoTitle(${item.id}, this.value)"
+                onkeydown="if(event.key==='Enter') this.blur()">
+            </div>
+          </div>
+          <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+            ${item.status !== 'clear'
+            ? `<button onclick="handleTodoAction(${item.id}, 'clear')" id="suc" class="mini-btn"><span>성공</span></button>
+                 <button onclick="handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>삭제</span></button>`
+            : `<span style="color: white; opacity: 25%; font-size:12px;">성공!</span>`}
+          </div>`;
+
+        // 드래그 앤 드롭 이벤트를 카드가 생성될 때 즉시 바인딩
         if (item.status !== 'clear') {
           card.addEventListener('dragstart', handleDragStart);
           card.addEventListener('dragover', handleDragOver);
           card.addEventListener('dragend', handleDragEnd);
-          card.addEventListener('touchstart', handleTouchStart, { passive: false });
-          card.addEventListener('touchmove', handleTouchMove, { passive: false });
-          card.addEventListener('touchend', handleTouchEnd);
         }
         container.appendChild(card);
       });
 
+      // 리스트 하단에 새 항목 생성용 빈 카드(버튼) 추가
       const addBtn = document.createElement('button');
       addBtn.className = 'add-card';
       addBtn.innerHTML = '<span>+</span>';
       addBtn.onclick = () => {
-        let title = prompt('새로운 일일 퀘스트를 입력하세요 (최대 20자):');
-        if (title && title.trim()) {
-          title = title.trim().substring(0, 20);
-          todoList.push({ id: Date.now(), type: 'todo', title, status: 'ready' });
-          renderAll();
-        }
+        const newId = Date.now();
+        todoList.push({ id: newId, type: 'todo', title: '', status: 'ready', isEditing: true });
+        renderAll();
+        // 렌더링 대기 후 새로 생성된 인풋 필드에 포커싱 부여
+        setTimeout(() => {
+          const input = document.querySelector(`.todo-card[data-id='${newId}'] input.inline-todo-input`);
+          if (input) input.focus();
+        }, 50);
       };
       container.appendChild(addBtn);
     }
 
+    // 퀘스트 제목 편집 완료 시 배열에 저장 및 동기화 프로세스 실행
+    window.saveTodoTitle = function (id, newTitle) {
+      const idx = todoList.findIndex(item => item.id === id);
+      if (idx === -1) return;
+
+      // 내용물이 완전히 비었을 경우 빈 카드를 삭제, 아니면 값 덮어쓰기
+      if (newTitle.trim() === '') todoList.splice(idx, 1);
+      else {
+        todoList[idx].title = newTitle.trim();
+        delete todoList[idx].isEditing;
+      }
+      renderAll();
+    };
+
+    // 정지 상태의 TODO를 포커스 가능한 편집 상태로 전환 
+    window.makeTodoEditable = function (id) {
+      const idx = todoList.findIndex(item => item.id === id);
+      if (idx !== -1 && todoList[idx].status !== 'clear') {
+        todoList[idx].isEditing = true;
+        renderAll();
+        setTimeout(() => {
+          const input = document.querySelector(`.todo-card[data-id='${id}'] input.inline-todo-input`);
+          if (input) input.focus();
+        }, 50);
+      }
+    };
+
+    // 전체 퀘스트 중 완료(Clear) 항목의 비율을 계산하고 좌측 상단 게이지 바 수정
     function updateProgressBar() {
       const todos = todoList.filter(item => item.type === 'todo');
       const total = todos.length;
       const clears = todos.filter(item => item.status === 'clear').length;
-      const percent = total > 0 ? clears / total * 100 : 0;
+      const percent = total > 0 ? (clears / total) * 100 : 0;
       document.getElementById('progress-bar-fill').style.width = percent + '%';
       document.getElementById('progress-text').innerText = clears + '/' + total;
     }
 
-    function renderStorageList() {
-      const container = document.getElementById('storage-list-container');
-      container.innerHTML = '';
-      quizStorage.forEach(quiz => {
-        const card = document.createElement('div');
-        card.className = 'storage-card';
-        card.onclick = event => openEditModal(quiz.id, event);
-        card.innerHTML = '<div class="storage-title">' + escapeHTML(quiz.title) +
-          '</div><div class="storage-bottom"><span class="storage-tag">저장된 문제</span><div class="storage-actions"><button id = "Pdel" class="mini-btn" onclick="event.stopPropagation(); deleteQuizFromStorage(' + quiz.id + ')">삭제</button><button id = "Bstorage" class="mini-btn" onclick="event.stopPropagation(); openSolveModalFromStorage(' + quiz.id + ')">다시풀기</button></div></div>';
-        container.appendChild(card);
-      });
-
-
-      const addBtn = document.createElement('button');
-      addBtn.className = 'add-card';
-      addBtn.innerHTML = '<span>+</span>';
-      addBtn.onclick = () => {
-        editingQuizId = null;
-        document.getElementById('input-quiz-title').value = '';
-        document.getElementById('input-quiz-content').value = '';
-        document.getElementById('input-quiz-answer').value = '';
-        document.getElementById('btn-submit-create').innerText = '제작';
-        openSpecificModal('create-modal');
-      };
-      container.appendChild(addBtn);
-    }
-
+    // 완료/삭제 액션의 분기 처리
     window.handleTodoAction = function (id, action) {
       const idx = todoList.findIndex(item => item.id === id);
       if (idx === -1) return;
 
-      // 완료 처리
       if (action === 'clear') {
         todoList[idx].status = 'clear';
-
-        if (window.Questify) {
-          window.Questify.gainXP(20);
-        }
+        const chars = window.Questify.getCharacters();
+        // 성공 시 전체 캐릭터들에게 균등 보상(XP) 분배 (글로벌 함수 이용)
+        chars.forEach((c, i) => {
+          window.Questify.gainXP(20, i);
+        });
       }
 
-      // 삭제 처리
       if (action === 'delete') {
         todoList.splice(idx, 1);
       }
-
       renderAll();
     };
 
-    window.openEditModal = function (id) {
-      const quiz = quizStorage.find(q => q.id === id);
-      if (!quiz) return;
-      editingQuizId = id;
-      document.getElementById('input-quiz-title').value = quiz.title;
-      document.getElementById('input-quiz-content').value = quiz.content;
-      document.getElementById('input-quiz-answer').value = quiz.answer;
-      document.getElementById('btn-submit-create').innerText = '수정';
-      openSpecificModal('create-modal');
+    /* --------------------------------------------------------------------------
+       [2-5] 학습 메모장 파트 및 캐릭터별 메모 조회
+       -------------------------------------------------------------------------- */
+    // 기존에 존재하던 메모를 불러와 메모장 모달에 값을 세팅하는 뷰 모드
+    window.editMemo = function (memoId, charIdx) {
+      const memo = memoStorage.find(m => m.id === memoId);
+      if (!memo) return;
+      editingMemoId = memoId;
+      targetCharIdxForMemo = charIdx;
+
+      const charName = window.Questify.getCharacters()[charIdx].name;
+      document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터의 메모를 수정합니다.`;
+      document.getElementById('input-notepad-content').value = memo.content;
+      openSpecificModal('notepad-modal');
     };
 
-    document.getElementById('btn-trigger-surprise').addEventListener('click', () => {
-      if (quizStorage.length === 0) return alert('저장된 문제가 없습니다! 먼저 문제를 만들어주세요.');
-      const availableQuizzes = quizStorage.filter(q => !todoList.some(item => item.type === 'quiz' && item.originQuizId === q.id));
-      if (availableQuizzes.length === 0) return alert('모든 문제가 이미 일일퀘스트에 등록되어 있습니다.');
-      const randomQuiz = availableQuizzes[Math.floor(Math.random() * availableQuizzes.length)];
-      todoList.unshift({ id: Date.now(), type: 'quiz', title: randomQuiz.title, originQuizId: randomQuiz.id });
-      renderAll();
-      alert('랜덤 퀴즈가 일일퀘스트 상단에 추가되었습니다!');
-    });
+    // 캐릭터 슬롯을 클릭했을 때 기록된 메모 이력 전체를 렌더링
+    function renderCharMemos(charIdx) {
+      const charName = window.Questify.getCharacters()[charIdx]?.name || '캐릭터';
+      document.getElementById('char-memo-title').innerText = `[${charName}]의 학습 메모`;
+      const container = document.getElementById('char-memo-list');
+      container.innerHTML = '';
 
-    window.deleteQuizFromStorage = function (quizId) {
-      if (confirm('이 문제를 정말로 삭제하시겠습니까?')) {
-        quizStorage = quizStorage.filter(q => q.id !== quizId);
-        todoList = todoList.filter(item => !(item.type === 'quiz' && item.originQuizId === quizId));
-        renderAll();
+      const memos = memoStorage.filter(m => m.charIdx === charIdx);
+      if (memos.length === 0) {
+        // 내역이 비어있을 시 플레이스홀더 메세지
+        container.innerHTML = '<div style="text-align:center; color:#666; margin-top:20px; font-size:14px; font-weight:800;">아직 작성된 메모가 없습니다.</div>';
+      } else {
+        memos.forEach(m => {
+          const el = document.createElement('div');
+          el.style.cssText = 'padding:12px; border:3px solid #000; border-radius:10px; background:#fff; font-size:13px; font-weight:800; display:flex; flex-direction:column; gap:8px; margin-bottom: 4px;';
+          el.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #ccc; padding-bottom: 4px;">
+                  <div style="font-size:10px; color:#999;">${m.date || ''}</div>
+                  <div style="display:flex; gap:6px;">
+                    <button style="border:2px solid #000; border-radius:5px; background:#f59e0b; font-size:11px; font-weight:bold; color:#fff; padding:4px 8px;" onclick="editMemo(${m.id}, ${charIdx})">편집</button>
+                    <button style="border:2px solid #000; border-radius:5px; background:#ef4444; font-size:11px; font-weight:bold; color:#fff; padding:4px 8px;" onclick="deleteMemo(${m.id}, ${charIdx})">삭제</button>
+                  </div>
+                </div>
+                <div style="line-height:1.4; white-space:pre-wrap; word-break:break-all; color:#000;">${escapeHTML(m.content)}</div>
+              `;
+          container.appendChild(el);
+        });
       }
-    };
-
-    const modalOverlay = document.getElementById('modal-overlay');
-    const modals = document.querySelectorAll('.modal-content');
-
-    function openSpecificModal(modalId) {
-      modalOverlay.style.display = 'flex';
-      modals.forEach(m => m.classList.add('hidden'));
-      document.getElementById(modalId).classList.remove('hidden');
     }
 
-    document.querySelectorAll('.close-modal-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        modalOverlay.style.display = 'none';
-        currentActiveQuiz = null;
-        editingQuizId = null;
-        if (pendingMassiveReward) {
-          alert('문제 생성을 취소하여 경험치 획득 기회가 소멸되었습니다.');
-          pendingMassiveReward = false;
+    // 메모 항목 삭제
+    window.deleteMemo = function (memoId, charIdx) {
+      showCustomConfirm('이 메모를 삭제하시겠습니까?', () => {
+        memoStorage = memoStorage.filter(m => m.id !== memoId);
+        saveAppData();
+        renderCharMemos(charIdx);
+      });
+    }
+
+    // 신규 작성 버튼: 특정 타겟 캐릭터의 ID만 연결해 둔 상태로 텍스트 공간을 비워 오픈
+    document.getElementById('btn-open-notepad').onclick = () => {
+      editingMemoId = null;
+      const charName = window.Questify.getCharacters()[targetCharIdxForMemo].name;
+      document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터에게 메모를 추가합니다.`;
+      document.getElementById('input-notepad-content').value = '';
+      openSpecificModal('notepad-modal');
+    };
+
+    // 모달 내 '저장' 버튼 클릭 시 신규 저장과 수정 흐름을 식별자(editingMemoId) 유무로 분리 처리
+    document.getElementById('btn-submit-notepad').addEventListener('click', () => {
+      const content = document.getElementById('input-notepad-content').value.trim();
+      if (!content) {
+        showCustomAlert('공부한 내용을 적어주세요!');
+        return;
+      }
+
+      if (editingMemoId) {
+        const idx = memoStorage.findIndex(m => m.id === editingMemoId);
+        if (idx !== -1) {
+          memoStorage[idx].content = content;
+          memoStorage[idx].date = new Date().toLocaleDateString() + ' (수정됨)';
+        }
+        editingMemoId = null;
+        saveAppData();
+        showCustomAlert('메모가 수정되었습니다!', () => {
+          renderCharMemos(targetCharIdxForMemo);
+          openSpecificModal('char-memo-modal');
+        });
+      } else {
+        memoStorage.push({
+          id: Date.now(),
+          charIdx: targetCharIdxForMemo,
+          content: content,
+          date: new Date().toLocaleDateString()
+        });
+        saveAppData();
+
+        showCustomAlert('메모가 저장되었습니다!\n(문제는 시간 경과에 따라 자동으로 생성됩니다.)', () => {
+          renderCharMemos(targetCharIdxForMemo);
+          openSpecificModal('char-memo-modal');
+          renderAll(); // 신규 저장은 앱 전역 데이터를 변경하므로 메인 화면 리렌더 허용
+        });
+      }
+    });
+
+    /* --------------------------------------------------------------------------
+       [2-6] AI 자동 생성 문제 (퀴즈) 파트 
+       -------------------------------------------------------------------------- */
+    // 우측 문제 저장소 탭을 담당하여, 보관중인 문제들을 뷰에 뿌려줌
+    function renderStorageList() {
+      const container = document.getElementById('storage-list-container');
+      container.innerHTML = '';
+
+      if (quizStorage.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:rgba(0,0,0,0.5); font-weight:800; margin-top:30px;">저장된 AI 문제가 없습니다.<br>캐릭터에 메모를 추가해보세요!</div>';
+        return;
+      }
+
+      quizStorage.forEach(quiz => {
+        const charName = window.Questify.getCharacters()[quiz.charIdx]?.name || '알 수 없음';
+        const card = document.createElement('div');
+        card.className = 'storage-card';
+        card.innerHTML = `
+          <div class="storage-title">${escapeHTML(quiz.title)} <span style="font-size:10px; color:#fcd34d;">[${escapeHTML(charName)}]</span></div>
+          <div class="storage-bottom">
+            <span class="storage-tag">AI 자동 생성 문제</span>
+            <div class="storage-actions">
+              <button id="Pdel" class="mini-btn" onclick="deleteQuizFromStorage(${quiz.id})">삭제</button>
+              <button id="Bstorage" class="mini-btn" onclick="openSolveModalFromStorage(${quiz.id})">풀기</button>
+            </div>
+          </div>`;
+        container.appendChild(card);
+      });
+    }
+
+    // 캐릭터의 문제 보유 여부에 따라 머리 위 느낌표(!) 아이콘을 토글하는 로직 
+    function syncExclamations() {
+      const chars = window.Questify.getCharacters();
+      let needsUpdate = false;
+
+      chars.forEach((c, idx) => {
+        const charQuizzes = quizStorage.filter(q => q.charIdx === idx);
+        // 문제를 다 풀어서 없어졌는데 느낌표가 켜져 있다면 해제
+        if (charQuizzes.length === 0 && c.showExclamation) {
+          c.showExclamation = false;
+          needsUpdate = true;
+        }
+        // 퀴즈가 추가되었는데 느낌표가 없다면 켬
+        else if (charQuizzes.length > 0 && !c.showExclamation) {
+          c.showExclamation = true;
+          needsUpdate = true;
         }
       });
-    });
+      if (needsUpdate) {
+        window.Questify.saveState();
+        if (typeof renderLobbyCharacters === 'function') renderLobbyCharacters();
+      }
+    }
 
-    document.getElementById('btn-submit-create').addEventListener('click', () => {
-      const title = document.getElementById('input-quiz-title').value.trim();
-      const content = document.getElementById('input-quiz-content').value.trim();
-      const answer = document.getElementById('input-quiz-answer').value.trim();
-      if (!title || !content || !answer) return alert('모든 빈칸을 채워주세요!');
+    // 15초 단위로 메모 저장소를 순회하여 문제를 가짜로(AI 대체) 자동 생성하는 백그라운드 타이머 
+    setInterval(() => {
+      if (memoStorage.length === 0) return;
 
-      if (editingQuizId) {
-        const quizIndex = quizStorage.findIndex(q => q.id === editingQuizId);
-        if (quizIndex !== -1) {
-          quizStorage[quizIndex].title = title;
-          quizStorage[quizIndex].content = content;
-          quizStorage[quizIndex].answer = answer;
-          todoList.forEach(item => {
-            if (item.type === 'quiz' && item.originQuizId === editingQuizId) item.title = title;
+      // 확률 판정 (50% 확률로 생성 시도)
+      if (Math.random() < 0.5) {
+        const randomMemo = memoStorage[Math.floor(Math.random() * memoStorage.length)];
+        const chars = window.Questify.getCharacters();
+        const targetChar = chars[randomMemo.charIdx];
+
+        // 동일 캐릭터에 문제가 과도하게 누적되지 않도록 중복 확인
+        const alreadyHasQuiz = quizStorage.some(q => q.charIdx === randomMemo.charIdx);
+
+        if (targetChar && !targetChar.showExclamation && !alreadyHasQuiz) {
+
+          // AI 자동 생성 텍스트의 모의 데이터 구조 (추후 백엔드 API 연동 위치)
+          const title = "Ai생성 문제 제목";
+          const aiContent = "Ai생성 문제 내용";
+          const answer = "자유 응답형";
+
+          quizStorage.push({
+            id: Date.now(),
+            title,
+            content: aiContent,
+            answer,
+            charIdx: randomMemo.charIdx
           });
-        }
-        alert('문제가 성공적으로 수정되었습니다.');
-        editingQuizId = null;
-      } else {
-        quizStorage.push({ id: Date.now(), title, content, answer });
-        if (pendingMassiveReward) {
-          if (window.Questify) window.Questify.gainXP(50);
-          alert('축하합니다! 문제 생성 50 경험치를 획득했습니다!');
-          pendingMassiveReward = false;
-        } else {
-          alert('문제가 성공적으로 저장되었습니다.');
+
+          targetChar.showExclamation = true; // 생성 성공 시 즉시 알림 토글 반영
+
+          saveAppData();
+          window.Questify.saveState();
+          window.Questify.updateUI();
+          renderStorageList();
         }
       }
-      modalOverlay.style.display = 'none';
-      renderAll();
-    });
+    }, 15000);
 
+    // 문제 저장소에서 삭제 명령이 발생했을 때
+    window.deleteQuizFromStorage = function (quizId) {
+      showCustomConfirm('이 문제(AI 생성)를 삭제하시겠습니까?', () => {
+        quizStorage = quizStorage.filter(q => q.id !== quizId);
+        syncExclamations();
+        renderAll();
+      });
+    };
+
+    // 우측 저장소 목록에서 진입하는 정규 루트 풀이 모달 세팅
     window.openSolveModalFromStorage = function (quizId) {
       const quiz = quizStorage.find(q => q.id === quizId);
       if (quiz) setupSolveModal(quiz, false);
     };
 
-    window.openSolveModalFromQuest = function (todoQuizId) {
-      const todoItem = todoList.find(item => item.id === todoQuizId);
-      if (!todoItem) return;
-      const quiz = quizStorage.find(q => q.id === todoItem.originQuizId);
-      if (quiz) setupSolveModal(quiz, true, todoQuizId);
+    // 캐릭터의 느낌표(!)를 직접 클릭했을 때 문제를 랜덤으로 뽑아 주는 서프라이즈 모드
+    window.handleExclamationClick = function (e, charIdx) {
+      e.stopPropagation(); // 캐릭터 드래그 등 하위 이벤트 연쇄 차단
+      const charQuizzes = quizStorage.filter(q => q.charIdx === charIdx);
+      if (charQuizzes.length === 0) {
+        syncExclamations();
+        return;
+      }
+
+      const randomQuiz = charQuizzes[Math.floor(Math.random() * charQuizzes.length)];
+      setupSolveModal(randomQuiz, true);
+      currentActiveQuiz.isLobbySurprise = true;
     };
 
-    function setupSolveModal(quiz, isSurprise, todoQuizId) {
-      currentActiveQuiz = { ...quiz, isSurprise, todoQuizId };
+    // 문제 풀기 모달 컨텐츠 초기화 밑바탕 공용 함수
+    function setupSolveModal(quiz, isSurprise) {
+      currentActiveQuiz = { ...quiz, isSurprise };
       document.getElementById('solve-quiz-title').innerText = quiz.title;
       document.getElementById('solve-quiz-content').innerText = quiz.content;
       document.getElementById('input-solve-answer').value = '';
+
+      // 입력 가능 상태를 보여주고 결과창은 가린다.
       document.getElementById('solve-input-state').classList.remove('hidden');
       document.getElementById('solve-result-state').className = 'hidden';
       openSpecificModal('solve-modal');
     }
 
+    // 채점 및 문제 완료(보상 획득) 프로세스
     document.getElementById('btn-grade-problem').addEventListener('click', () => {
       if (!currentActiveQuiz) return;
-      const userAnswer = document.getElementById('input-solve-answer').value.trim();
-      const isCorrect = userAnswer.toLowerCase() === currentActiveQuiz.answer.toLowerCase();
+
       document.getElementById('solve-input-state').classList.add('hidden');
       const resultBox = document.getElementById('solve-result-state');
       resultBox.classList.remove('hidden');
 
-      if (isCorrect) {
-        resultBox.className = 'result-good';
-        resultBox.innerText = '정답입니다! 경험치를 획득했습니다.';
-        resultBox.onclick = null;
-        if (window.Questify) window.Questify.gainXP(currentActiveQuiz.isSurprise ? 30 : 20);
-        if (currentActiveQuiz.isSurprise && currentActiveQuiz.todoQuizId) {
-          const idx = todoList.findIndex(item => item.id === currentActiveQuiz.todoQuizId);
-          if (idx !== -1) todoList.splice(idx, 1);
-          renderAll();
-        }
-      } else {
-        resultBox.className = 'result-bad';
-        resultBox.innerHTML = '<div>오답입니다! (입력: ' + escapeHTML(userAnswer) + ')</div><div style="font-size:12px; margin-top:6px; opacity:.8;">터치하면 정답이 표시됩니다.</div>';
-        resultBox.onclick = function () {
-          resultBox.innerHTML = '<div>오답입니다! (입력: ' + escapeHTML(userAnswer) + ')</div><div style="font-size:15px; font-weight:900; color:#1d4ed8; margin-top:4px;">정답: ' + escapeHTML(currentActiveQuiz.answer) + '</div>';
-          resultBox.onclick = null;
-          resultBox.className = 'result-bad';
-          resultBox.style.cursor = 'default';
-        };
-      }
+      // AI 문제 검증 없이 보상을 부여하는 로직 수행 
+      resultBox.className = 'result-good';
+      resultBox.innerText = '문제 해결! 경험치를 획득했습니다.';
+      resultBox.onclick = null;
+
+      // 서프라이즈(느낌표 클릭) 상태인지 저장소 진입인지 구분하여 XP 할당
+      if (window.Questify) window.Questify.gainXP(currentActiveQuiz.isSurprise ? 30 : 20, currentActiveQuiz.charIdx);
+
+      // 사용한 퀴즈를 삭제하고 남은 문제를 점검
+      quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id);
+      syncExclamations();
+
+      renderAll();
     });
 
+    /* --------------------------------------------------------------------------
+       [2-7] 로비 캐릭터의 렌더링 및 드래그 제어 로직 
+       -------------------------------------------------------------------------- */
+    const lobbyContainer = document.getElementById('lobby-container');
+    const gameScreenBox = document.getElementById('game-screen');
+
+    // 캐릭터 드래그 연산용 좌표 변수
+    let isCharDragging = false;
+    let dragTargetChar = null;
+    let charStartX = 0, charStartY = 0;
+    let charInitialLeft = 0, charInitialTop = 0;
+    let dragMoved = false;
+
+    // 시스템 데이터(state)를 기반으로 게임 뷰에 캐릭터들의 시각적 DOM 카드를 생성
+    function renderLobbyCharacters() {
+      lobbyContainer.innerHTML = '';
+      const chars = window.Questify.getCharacters();
+      if (!chars || chars.length === 0) return;
+
+      chars.forEach((char, idx) => {
+        const charWrapper = document.createElement('div');
+        charWrapper.className = 'lobby-char';
+        charWrapper.dataset.idx = idx;
+        // 데이터 상의 퍼센트 기반 좌표 반영
+        charWrapper.style.left = char.x + '%';
+        charWrapper.style.top = char.y + '%';
+
+        let exclamationHTML = '';
+        if (char.showExclamation) {
+          exclamationHTML = `<div class="char-exclamation" onclick="handleExclamationClick(event, ${idx})">!</div>`;
+        }
+
+        // 레벨에 따른 이름표 색상/테마 변경 (확장 여지)
+        const color = char.level >= 40 ? '#f87171' : char.level >= 20 ? '#fcd34d' : char.level >= 10 ? '#93c5fd' : '#f3f4f6';
+
+        // 캐릭터 하단부에 표시할 경험치 바의 퍼센트 비례 연산
+        const requiredXP = window.Questify.getXpRequired(char.level);
+        const xpPercent = requiredXP === Infinity ? 100 : Math.min(100, (char.xp / requiredXP) * 100);
+
+        charWrapper.innerHTML = `
+          ${exclamationHTML}
+          <div class="char-bubble hidden"></div>
+          <div class="char-body">
+             <img src="chrSD.png" alt="캐릭터SD">
+          </div>
+          <div class="char-nameplate">
+            <div class="char-name-text">${escapeHTML(char.name)}</div>
+            <div class="char-level-text">Lv.${char.level}</div>
+            <div class="char-xp-bar-container">
+              <div class="char-xp-bar-fill" style="width: ${xpPercent}%;"></div>
+            </div>
+          </div>
+        `;
+
+        // 마우스 및 터치 드래그 리스너 할당
+        charWrapper.addEventListener('mousedown', startCharDrag);
+        charWrapper.addEventListener('touchstart', startCharDrag, { passive: false });
+        lobbyContainer.appendChild(charWrapper);
+      });
+    }
+
+    // 캐릭터 드래그의 시발점 (좌표 획득)
+    function startCharDrag(e) {
+      if (gameScreenBox.classList.contains('hidden')) return;
+      if (e.target.classList.contains('char-exclamation')) return; // 느낌표를 클릭하면 드래그를 실행하지 않음
+
+      isCharDragging = true;
+      dragMoved = false;
+      dragTargetChar = e.currentTarget;
+
+      const point = e.type.includes('mouse') ? e : e.touches[0];
+      charStartX = point.clientX;
+      charStartY = point.clientY;
+
+      // CSS의 transform(-50%) 방해를 받지 않기 위해 DOM의 offset 좌표계산 사용
+      charInitialLeft = dragTargetChar.offsetLeft;
+      charInitialTop = dragTargetChar.offsetTop;
+    }
+
+    // 캐릭터 위치 이동을 지속적으로 반영하며 화면 이탈을 방어
+    function dragChar(e) {
+      if (!isCharDragging || !dragTargetChar) return;
+      const point = e.type.includes('mouse') ? e : e.touches[0];
+
+      // 단순 터치(클릭)과 이동을 구분하기 위한 5px 임계값 설정
+      if (Math.abs(point.clientX - charStartX) > 5 || Math.abs(point.clientY - charStartY) > 5) {
+        dragMoved = true;
+      }
+
+      if (dragMoved) {
+        e.preventDefault();
+
+        // 갱신된 새로운 중심점 기준 좌표
+        let newLeft = charInitialLeft + (point.clientX - charStartX);
+        let newTop = charInitialTop + (point.clientY - charStartY);
+
+        const parentRect = gameScreenBox.getBoundingClientRect();
+        const rect = dragTargetChar.getBoundingClientRect();
+
+        // 캐릭터 크기의 절반만큼 화면 외곽 충돌 마진(벽) 산출
+        let halfW = rect.width / 2;
+        let halfH = rect.height / 2;
+
+        if (newLeft - halfW < 0) newLeft = halfW;
+        if (newTop - halfH < 0) newTop = halfH;
+        if (newLeft + halfW > parentRect.width) newLeft = parentRect.width - halfW;
+        if (newTop + halfH > parentRect.height) newTop = parentRect.height - halfH;
+
+        dragTargetChar.style.left = newLeft + 'px';
+        dragTargetChar.style.top = newTop + 'px';
+      }
+    }
+
+    // 캐릭터 드래그 종료 및 좌표/자석효과 보정
+    function endCharDrag(e) {
+      if (!isCharDragging || !dragTargetChar) return;
+      isCharDragging = false;
+
+      // 이동 거리가 없어 단순 클릭으로 간주될 경우: 대상 캐릭터의 메모창 즉시 로드
+      if (!dragMoved) {
+        const clickedIdx = parseInt(dragTargetChar.dataset.idx);
+        targetCharIdxForMemo = clickedIdx;
+        renderCharMemos(clickedIdx);
+        openSpecificModal('char-memo-modal');
+        dragTargetChar = null;
+        return;
+      }
+
+      const parentRect = gameScreenBox.getBoundingClientRect();
+      if (parentRect.width === 0 || parentRect.height === 0) {
+        dragTargetChar = null;
+        return;
+      }
+
+      let currentLeft = parseFloat(dragTargetChar.style.left);
+      let currentTop = parseFloat(dragTargetChar.style.top);
+
+      // 같은 위치에 캐릭터가 누적되어 겹쳐지는 것을 방지하는 자석(밀어내기) 효과
+      const others = Array.from(document.querySelectorAll('.lobby-char')).filter(el => el !== dragTargetChar);
+      others.forEach(other => {
+        const oLeft = other.offsetLeft;
+        const oTop = other.offsetTop;
+        const dist = Math.hypot(currentLeft - oLeft, currentTop - oTop);
+        if (dist < 50) {
+          currentLeft += 50;
+          currentTop += 50;
+        }
+      });
+
+      // 해상도 변경에도 영향을 받지 않도록 중심 좌표를 퍼센트(%)로 치환
+      let pctX = (currentLeft / parentRect.width) * 100;
+      let pctY = (currentTop / parentRect.height) * 100;
+
+      if (isNaN(pctX) || pctX < 0) pctX = 50;
+      if (isNaN(pctY) || pctY < 0) pctY = 80;
+
+      dragTargetChar.style.left = pctX + '%';
+      dragTargetChar.style.top = pctY + '%';
+
+      // 이동된 좌표를 시스템에 전달 후 저장 완료
+      const idx = parseInt(dragTargetChar.dataset.idx);
+      const chars = window.Questify.getCharacters();
+      if (chars[idx]) {
+        chars[idx].x = pctX;
+        chars[idx].y = pctY;
+        window.Questify.saveState();
+      }
+
+      dragTargetChar = null;
+    }
+
+    // 마우스 및 터치 이동을 전역 문서 레벨에서 추적
+    document.addEventListener('mousemove', dragChar);
+    document.addEventListener('mouseup', endCharDrag);
+    document.addEventListener('touchmove', dragChar, { passive: false });
+    document.addEventListener('touchend', endCharDrag);
+
+    // 일정 간격(6초)으로 화면의 캐릭터 중 하나를 무작위 선택하여 대화창 표시 기능 
+    setInterval(() => {
+      const chars = document.querySelectorAll('.lobby-char');
+      if (chars.length === 0 || gameScreenBox.classList.contains('hidden')) return;
+
+      const randomChar = chars[Math.floor(Math.random() * chars.length)];
+      const idx = parseInt(randomChar.dataset.idx);
+      const charData = window.Questify.getCharacters()[idx];
+
+      // 느낌표(문제 있음) 상태일 경우 일반 대사를 출력하지 않음
+      if (charData && charData.showExclamation) return;
+
+      const bubble = randomChar.querySelector('.char-bubble');
+      if (!bubble) return;
+
+      const lines = ["오늘도 화이팅!", "퀘스트 잊지 않았지?", "메모를 남겨볼까?", "성장하고 있어!"];
+      bubble.innerText = lines[Math.floor(Math.random() * lines.length)];
+      bubble.classList.remove('hidden');
+
+      setTimeout(() => {
+        bubble.classList.add('hidden');
+      }, 3000);
+    }, 6000);
+
+    /* --------------------------------------------------------------------------
+       [2-8] 집중 타이머 계산 및 디스플레이 제어
+       -------------------------------------------------------------------------- */
     const timerDisplay = document.getElementById('timer-display');
     const startTimerBtn = document.getElementById('start-timer-btn');
     const resetTimerBtn = document.getElementById('reset-timer-btn');
     const presetBtns = document.querySelectorAll('.preset-btn');
+
     let totalSeconds = 0;
     let timerInterval = null;
     let timerRunning = false;
     let timerPaused = false;
+
+    // 타이머 디스플레이 배열 (00:00:00 구조에서 숫자만 남긴 인덱스)
     const DIGIT_POSITIONS = [0, 1, 3, 4, 6, 7];
 
     function formatTime(seconds) {
       const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
       const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
       const secs = String(seconds % 60).padStart(2, '0');
-      return hrs + ':' + mins + ':' + secs;
+      return `${hrs}:${mins}:${secs}`;
     }
 
+    // 사용자의 입력 키 코드를 실제 초(sec)로 역산
     function totalSecondsFromDigits(digits) {
-      const h = Number('' + digits[0] + digits[1]) || 0;
-      const m = Number('' + digits[2] + digits[3]) || 0;
-      const s = Number('' + digits[4] + digits[5]) || 0;
-      return h * 3600 + m * 60 + s;
+      const h = Number(`${digits[0]}${digits[1]}`) || 0;
+      const m = Number(`${digits[2]}${digits[3]}`) || 0;
+      const s = Number(`${digits[4]}${digits[5]}`) || 0;
+      return (h * 3600) + (m * 60) + s;
     }
 
     function updateDisplays() { timerDisplay.value = formatTime(totalSeconds); }
 
-    function startTimer() {
-      if (totalSeconds <= 0) return;
-      timerRunning = true;
-      timerPaused = false;
-      startTimerBtn.innerText = '일시정지';
-      timerDisplay.disabled = true;
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        if (timerPaused) return;
-        if (totalSeconds > 0) {
-          totalSeconds--;
-          updateDisplays();
-        }
-        if (totalSeconds <= 0) {
-          totalSeconds = 0;
-          updateDisplays();
-          stopTimer();
-          alert('집중 시간이 끝났습니다!\n\n문제를 생성하면 50 경험치를 얻습니다!');
-          pendingMassiveReward = true;
-          editingQuizId = null;
-          document.getElementById('input-quiz-title').value = '';
-          document.getElementById('input-quiz-content').value = '';
-          document.getElementById('input-quiz-answer').value = '';
-          document.getElementById('btn-submit-create').innerText = '제작';
-          openSpecificModal('create-modal');
-        }
-      }, 1000);
-    }
-
-    function stopTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
-      timerRunning = false;
-      timerPaused = false;
-      startTimerBtn.innerText = '시작';
-      timerDisplay.disabled = false;
-    }
-
-    startTimerBtn.addEventListener('click', () => {
-      if (timerRunning) {
-        timerPaused = !timerPaused;
-        startTimerBtn.innerText = timerPaused ? '계속' : '일시정지';
-      } else {
-        startTimer();
-      }
-    });
-    resetTimerBtn.addEventListener('click', () => { stopTimer(); totalSeconds = 0; updateDisplays(); });
-    presetBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (timerRunning && !timerPaused) return;
-        totalSeconds += parseInt(btn.dataset.time, 10);
-        if (totalSeconds > 359999) totalSeconds = 359999;
-        updateDisplays();
-      });
-    });
-
+    // 타이머 직접 입력(키보드 타이핑) 지원 및 글자 꼬임 방지 이벤트
     timerDisplay.addEventListener('keydown', e => {
       if (timerRunning) { e.preventDefault(); return; }
       if (['ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(e.key)) return;
       e.preventDefault();
+
       let digits = timerDisplay.value.replace(/:/g, '').split('');
       const start = timerDisplay.selectionStart;
-      let digitIndex = DIGIT_POSITIONS.findIndex(pos => pos >= start);
-      if (digitIndex === -1) digitIndex = 5;
+
       if (/\d/.test(e.key)) {
+        let digitIndex = DIGIT_POSITIONS.findIndex(pos => pos >= start);
+        if (digitIndex === -1) digitIndex = 5;
         digits[digitIndex] = e.key;
         totalSeconds = totalSecondsFromDigits(digits);
         updateDisplays();
@@ -687,80 +1160,111 @@
       }
     });
 
+    // 지정 시간이 되면 메모 작성 유도로 흐름을 연결하는 시작 트리거
+    function startTimer() {
+      if (totalSeconds <= 0) return;
+      timerRunning = true;
+      timerPaused = false;
+      startTimerBtn.innerText = '일시정지';
+      timerDisplay.disabled = true;
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        if (timerPaused) return;
+        if (totalSeconds > 0) {
+          totalSeconds--;
+          updateDisplays();
+        }
+        if (totalSeconds <= 0) {
+          totalSeconds = 0;
+          updateDisplays();
+          stopTimer();
+
+          // 타이머 완료 후 팝업으로 캐릭터 대상 선택 모달을 자동 유도
+          showCustomAlert('집중 시간이 끝났습니다!\n\n저장할 캐릭터를 선택하여 메모를 남겨주세요.', () => {
+            const options = window.Questify.getCharacters().map((c, i) => ({ value: i, text: c.name }));
+            showCustomSelect('캐릭터 선택', '어떤 캐릭터에게 메모를 추가하시겠습니까?', options, (selectedIdx) => {
+              targetCharIdxForMemo = parseInt(selectedIdx);
+              const charName = window.Questify.getCharacters()[targetCharIdxForMemo].name;
+              document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터에게 메모를 추가합니다.`;
+              document.getElementById('input-notepad-content').value = '';
+              openSpecificModal('notepad-modal');
+            });
+          });
+        }
+      }, 1000);
+    }
+
+    // 타이머 중단/정지 상태 복구
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      timerRunning = false;
+      timerPaused = false;
+      startTimerBtn.innerText = '시작';
+      timerDisplay.disabled = false;
+    }
+
+    startTimerBtn.addEventListener('click', () => {
+      if (timerRunning) {
+        timerPaused = !timerPaused;
+        startTimerBtn.innerText = timerPaused ? '계속' : '일시정지';
+      } else {
+        startTimer();
+      }
+    });
+
+    resetTimerBtn.addEventListener('click', () => { stopTimer(); totalSeconds = 0; updateDisplays(); });
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (timerRunning && !timerPaused) return;
+        totalSeconds += parseInt(btn.dataset.time, 10);
+        updateDisplays();
+      });
+    });
+
+    /* --------------------------------------------------------------------------
+       [2-9] UI 부가 기능 (드래그, 패널 토글 전환 기능 지원)
+       -------------------------------------------------------------------------- */
     let dragSrcEl = null;
+
+    // 할 일(TODO) 목록의 순서 변경 드래그 이벤트 루틴
     function handleDragStart(e) {
       dragSrcEl = this;
       this.style.opacity = '.4';
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', this.dataset.id);
     }
+
     function handleDragOver(e) {
       e.preventDefault();
+      // 자신(dragSrcEl)을 제외한 드롭 가능 구역 판별 로직
       if (this !== dragSrcEl && this.classList.contains('draggable-todo-item') && this.dataset.status !== 'clear') {
         const children = Array.from(this.parentNode.querySelectorAll('.draggable-todo-item'));
+        // 상하 순서를 비교하여 엘리먼트 위치를 스왑
         if (children.indexOf(dragSrcEl) < children.indexOf(this)) this.after(dragSrcEl);
         else this.before(dragSrcEl);
       }
       return false;
     }
+
     function handleDragEnd() {
       this.style.opacity = '1';
-      reorderTodoListData();
     }
 
-    let touchStartEl = null;
-    function handleTouchStart(e) {
-      if (!e.target.classList.contains('drag-handle')) return;
-      touchStartEl = this;
-      this.style.opacity = '.4';
-    }
-    function handleTouchMove(e) {
-      if (!touchStartEl) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-      const itemEl = targetEl && targetEl.closest('.draggable-todo-item');
-      if (itemEl && itemEl !== touchStartEl && itemEl.dataset.status !== 'clear') {
-        const children = Array.from(this.parentNode.querySelectorAll('.draggable-todo-item'));
-        if (children.indexOf(touchStartEl) < children.indexOf(itemEl)) itemEl.after(touchStartEl);
-        else itemEl.before(touchStartEl);
-      }
-    }
-    function handleTouchEnd() {
-      if (!touchStartEl) return;
-      touchStartEl.style.opacity = '1';
-      touchStartEl = null;
-      reorderTodoListData();
-    }
-
-    function reorderTodoListData() {
-      const currentDOMIds = Array.from(document.querySelectorAll('.draggable-todo-item')).map(el => parseInt(el.dataset.id, 10));
-      const quizzes = todoList.filter(item => item.type === 'quiz');
-      const completedTodos = todoList.filter(item => item.type === 'todo' && item.status === 'clear');
-      const activeTodos = todoList.filter(item => item.type === 'todo' && item.status !== 'clear');
-      activeTodos.sort((a, b) => currentDOMIds.indexOf(a.id) - currentDOMIds.indexOf(b.id));
-      todoList = [...quizzes, ...activeTodos, ...completedTodos];
-      saveAppData();
-    }
-
+    // 모바일 햄버거 토글: 좌측 게임 뷰 / 우측 리스트 뷰 교차
     const mobileToggleBtn = document.getElementById('mobile-toggle-btn');
-    const leftPanel = document.getElementById('left-panel');
-    const rightPanelWrapper = document.getElementById('right-panel-wrapper');
+    const appContainer = document.querySelector('.app');
     mobileToggleBtn.addEventListener('click', () => {
-      const isCollapsed = rightPanelWrapper.classList.toggle('mobile-collapsed');
-      leftPanel.style.height = isCollapsed ? 'calc(100% - 56px)' : '45%';
-    });
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 768) {
-        rightPanelWrapper.classList.remove('mobile-collapsed');
-        leftPanel.style.height = '';
-      }
+      appContainer.classList.toggle('mobile-menu-open');
     });
 
     const gameScreen = document.getElementById('game-screen');
     const timerScreen = document.getElementById('timer-screen');
     const openTimerBtn = document.getElementById('open-timer-btn');
     const closeTimerBtn = document.getElementById('close-timer-btn');
+
+    // 게임 화면과 타이머 화면(Overlay) 간의 교차 전시 처리
     function toggleTimerScreen() {
       if (timerScreen.classList.contains('hidden')) {
         gameScreen.classList.add('hidden');
@@ -775,10 +1279,12 @@
     openTimerBtn.addEventListener('click', toggleTimerScreen);
     closeTimerBtn.addEventListener('click', toggleTimerScreen);
 
+    // 하단 탭 내비게이터를 사용해 우측 패널의 컨텐츠 분리 교체
     const tabQuest = document.getElementById('tab-quest');
     const panelQuest = document.getElementById('panel-quest');
     const tabStorage = document.getElementById('tab-storage');
     const panelStorage = document.getElementById('panel-storage');
+
     tabStorage.addEventListener('click', () => {
       panelQuest.classList.add('hidden');
       panelStorage.classList.remove('hidden');
@@ -792,112 +1298,107 @@
       tabStorage.classList.remove('active');
     });
 
+    /* --------------------------------------------------------------------------
+       [2-10] 슬롯(유니온 전체 캐릭터) 관리 창 및 데이터 컨트롤 
+       -------------------------------------------------------------------------- */
     document.getElementById('user-profile-card').addEventListener('click', () => {
       renderSlotInventory();
       openSpecificModal('slot-modal');
     });
 
+    // 등록된 보유 캐릭터의 개요와 현재 상황을 출력
     function renderSlotInventory() {
-      if (!window.Questify) return;
-      const info = window.Questify.getSlotInfo();
-      const characters = window.Questify.getCharacters();
+      const chars = window.Questify.getCharacters();
       const container = document.getElementById('slot-manager-container');
-      document.getElementById('union-level-display').innerText = '전체 유니온 Lv.' + info.unionLevel;
+      const unionLevelDisplay = document.getElementById('union-level-display');
+      if (unionLevelDisplay) unionLevelDisplay.innerText = '전체 유니온 Lv.' + window.Questify.getUnionLevel();
       container.innerHTML = '';
-      characters.forEach((char, index) => {
-        const isActive = index === info.activeSlot;
+
+      chars.forEach((char, index) => {
         const slotCard = document.createElement('div');
-        slotCard.className = 'slot-card' + (isActive ? ' active' : '');
-        slotCard.innerHTML = '<div class="slot-head"><span>슬롯 #' + (index + 1) + '</span>' +
-          (isActive ? '<span class="badge">현재 육성중</span>' : '') +
-          (char.level >= 50 && !isActive ? '<span class="badge gold">졸업</span>' : '') +
-          '</div><div style="font-size:13px; color:#374151; font-weight:800; margin-top:4px;"><span style="display:inline-block; width:60px;">레벨:</span> Lv.' + char.level + '</div>' +
-          '<div style="font-size:13px; color:#374151; font-weight:800;"><span style="display:inline-block; width:60px;">현재 XP:</span> ' + char.xp + '</div>' +
-          '<button class="plain-btn" onclick="Questify.switchSlot(' + index + '); renderSlotInventory();" style="margin-top:8px; padding:6px; font-size:12px;" ' + (isActive ? 'disabled' : '') + '>' + (isActive ? '선택됨' : '이 캐릭터로 스위치 전환') + '</button>';
+        slotCard.className = 'slot-card';
+
+        const maxXP = window.Questify.getXpRequired(char.level);
+        const xpText = maxXP === Infinity ? 'MAX' : maxXP;
+        const xpPercent = maxXP === Infinity ? 100 : Math.min(100, (char.xp / maxXP) * 100);
+
+        slotCard.innerHTML = `
+          <div class="slot-head">
+            <span style="font-weight:900;">${escapeHTML(char.name)}</span>
+            ${char.level >= 50 ? '<span class="badge gold">졸업</span>' : ''}
+          </div>
+          <div style="font-size:13px; color:#374151; font-weight:800; margin-top:4px;">레벨: Lv.${char.level}</div>
+          <div style="font-size:13px; color:#374151; font-weight:800; margin-top:4px;">경험치: ${char.xp} / ${xpText} XP</div>
+          <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; margin-top: 4px; overflow: hidden;">
+            <div style="width: ${xpPercent}%; height: 100%; background: #3b82f6; transition: width 0.3s;"></div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="plain-btn" style="flex:1; padding:6px; font-size:12px; border-radius:5px;" onclick="window.renameChar(${index})">이름 변경</button>
+            <button class="plain-btn" style="flex:1; padding:6px; font-size:12px; border-radius:5px; background:#ef4444; color:#fff;" onclick="window.deleteChar(${index})">삭제</button>
+          </div>
+        `;
         container.appendChild(slotCard);
       });
-      const addSlotBtn = document.getElementById('btn-add-new-character');
-      addSlotBtn.disabled = !info.canAddSlot;
-      addSlotBtn.onclick = () => {
-        if (window.Questify.addSlot()) renderSlotInventory();
+
+      // 새로운 캐릭터(분야/과목 등) 추가 인터페이스
+      document.getElementById('btn-add-new-character').onclick = () => {
+        showCustomPrompt('새로운 카테고리(캐릭터) 이름을 입력하세요:', '새 목표', (newName) => {
+          if (!newName || !newName.trim()) newName = '캐릭터 ' + (chars.length + 1);
+          // 생성 시 맵 무작위 좌표에 캐릭터 스폰
+          const randomX = Math.floor(Math.random() * 60) + 20;
+          const randomY = Math.floor(Math.random() * 40) + 40;
+
+          chars.push({ name: newName.trim().substring(0, 10), level: 1, xp: 0, x: randomX, y: randomY, showExclamation: false });
+          window.Questify.saveState();
+          window.Questify.updateUI();
+          renderSlotInventory();
+        });
       };
     }
-    window.renderSlotInventory = renderSlotInventory;
 
-    const draggableCharacter = document.getElementById('draggable-character');
-    const gameScreenBox = document.getElementById('game-screen');
-    let isCharDragging = false;
-    let charStartX = 0;
-    let charStartY = 0;
-    let charInitialLeft = 0;
-    let charInitialTop = 0;
-
-    function startCharDrag(e) {
-      if (gameScreenBox.classList.contains('hidden')) return;
-      isCharDragging = true;
-      const point = e.type.includes('mouse') ? e : e.touches[0];
-      charStartX = point.clientX;
-      charStartY = point.clientY;
-      const rect = draggableCharacter.getBoundingClientRect();
-      const parentRect = gameScreenBox.getBoundingClientRect();
-      charInitialLeft = rect.left - parentRect.left;
-      charInitialTop = rect.top - parentRect.top;
-      draggableCharacter.style.bottom = 'auto';
-      draggableCharacter.style.transform = 'none';
-      draggableCharacter.style.left = charInitialLeft + 'px';
-      draggableCharacter.style.top = charInitialTop + 'px';
-    }
-
-    function dragChar(e) {
-      if (!isCharDragging) return;
-      e.preventDefault();
-      const point = e.type.includes('mouse') ? e : e.touches[0];
-      let newLeft = charInitialLeft + (point.clientX - charStartX);
-      let newTop = charInitialTop + (point.clientY - charStartY);
-      const parentRect = gameScreenBox.getBoundingClientRect();
-      const rect = draggableCharacter.getBoundingClientRect();
-      if (newLeft < 0) newLeft = 0;
-      if (newTop < 0) newTop = 0;
-      if (newLeft + rect.width > parentRect.width) newLeft = parentRect.width - rect.width;
-      if (newTop + rect.height > parentRect.height) newTop = parentRect.height - rect.height;
-      draggableCharacter.style.left = newLeft + 'px';
-      draggableCharacter.style.top = newTop + 'px';
-    }
-
-    function endCharDrag() {
-      isCharDragging = false;
-    }
-
-    draggableCharacter.addEventListener('mousedown', startCharDrag);
-    document.addEventListener('mousemove', dragChar);
-    document.addEventListener('mouseup', endCharDrag);
-    draggableCharacter.addEventListener('touchstart', startCharDrag, { passive: false });
-    document.addEventListener('touchmove', dragChar, { passive: false });
-    document.addEventListener('touchend', endCharDrag);
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (draggableCharacter.style.transform === 'none') {
-        const parentRect = gameScreenBox.getBoundingClientRect();
-        const rect = draggableCharacter.getBoundingClientRect();
-        let currentLeft = draggableCharacter.offsetLeft;
-        let currentTop = draggableCharacter.offsetTop;
-        if (currentLeft + rect.width > parentRect.width) currentLeft = parentRect.width - rect.width;
-        if (currentTop + rect.height > parentRect.height) currentTop = parentRect.height - rect.height;
-        if (currentLeft < 0) currentLeft = 0;
-        if (currentTop < 0) currentTop = 0;
-        draggableCharacter.style.left = currentLeft + 'px';
-        draggableCharacter.style.top = currentTop + 'px';
-      }
-    });
-    resizeObserver.observe(gameScreenBox);
-
+    // 앱 데이터 초기화 (하드 리셋)
     document.getElementById('btn-reset-all-data').addEventListener('click', () => {
-      if (confirm('경고: 모든 캐릭터 성장, 퀘스트, 문제 데이터가 완전히 삭제되며 복구할 수 없습니다.\n\n정말 모든 데이터를 삭제하시겠습니까?')) {
+      showCustomConfirm('경고: 모든 데이터가 삭제됩니다.\n정말 삭제하시겠습니까?', () => {
         localStorage.clear();
         location.reload();
-      }
+      });
     });
 
+    // 개별 캐릭터 이름 변경 (10자 내외 제한)
+    window.renameChar = function (idx) {
+      const currentName = window.Questify.getCharacters()[idx].name;
+      showCustomPrompt('새로운 캐릭터 이름을 입력하세요:', currentName, (newName) => {
+        if (newName && newName.trim()) {
+          window.Questify.getCharacters()[idx].name = newName.trim().substring(0, 10);
+          window.Questify.saveState();
+          window.Questify.updateUI();
+          renderSlotInventory();
+        }
+      });
+    }
+
+    // 캐릭터 제거 시 관련된 메모와 문제를 유지하지만 연결고리(charIdx) 값을 수정하여 고아(Orphan) 처리를 방지
+    window.deleteChar = function (idx) {
+      const chars = window.Questify.getCharacters();
+      if (chars.length <= 1) {
+        showCustomAlert('캐릭터는 반드시 1명 이상 존재해야 합니다.');
+        return;
+      }
+      showCustomConfirm('이 캐릭터를 정말 삭제하시겠습니까? (메모와 퀘스트는 보존됩니다)', () => {
+        chars.splice(idx, 1);
+
+        // 캐릭터 배열이 축소되면서 인덱스가 당겨지므로 관련 데이터의 참조 인덱스를 갱신
+        quizStorage.forEach(q => { if (q.charIdx === idx) q.charIdx = 0; else if (q.charIdx > idx) q.charIdx--; });
+        memoStorage.forEach(m => { if (m.charIdx === idx) m.charIdx = 0; else if (m.charIdx > idx) m.charIdx--; });
+
+        window.Questify.saveState();
+        window.Questify.updateUI();
+        renderSlotInventory();
+        renderAll();
+      });
+    }
+
+    // 파일 로드 시의 최초 실행 함수 세팅
     loadAppData();
     renderAll();
   </script>
