@@ -1,5 +1,5 @@
     /* ==========================================================================
-       [1] 전역 초기화 및 기본 박스 모델 (style.css 오리지널 스타일 완전 이식)
+       [1] 전역 초기화 및 기본 박스 모델
        ========================================================================== */
     * {
       box-sizing: border-box; /* 패딩과 테두리를 요소의 크기에 포함 */
@@ -623,12 +623,12 @@
 
     /* 정답 제출 후 결과 피드백 상자 */
     #solve-result-state {
-      width: 100%; height: 96px; display: flex; justify-content: center; align-items: center; overflow-y: auto;
-      padding: 8px; border-radius: 12px; text-align: center; font-size: 13px; font-weight: 800; line-height: 1.5; word-break: break-all;
+      width: 100%; min-height: 96px; height: auto; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto;
+      padding: 16px; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 800; line-height: 1.5; word-break: break-all;
     }
 
     .result-good { border: 2.5px solid #22c55e; background: #dcfce7; color: #15803d; }
-    .result-bad { flex-direction: column; border: 2.5px solid #ef4444; background: #fee2e2; color: #b91c1c; cursor: pointer; }
+    .result-bad { flex-direction: column; border: 2.5px solid #ef4444; background: #fee2e2; color: #b91c1c; }
 
     /* ==========================================================================
        [6] 캐릭터(슬롯) 관리 모달 UI
@@ -860,7 +860,7 @@
 
       #open-timer-btn { right: 5%; bottom: 15%; width: 12%; max-width: 64px; max-height: 64px; aspect-ratio: 1; }
       #bottom-tab-bar { height: 10%; min-height: 48px; }
-      .tab { font-size: 2vh; }
+      .tab { font-size: 3vh; }
     }
 
     /* 1024px 이상 대화면 디스플레이 대응 */
