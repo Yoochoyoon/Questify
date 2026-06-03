@@ -133,15 +133,29 @@
 
       <!-- 퀴즈 풀이 모달 -->
       <div id="solve-modal" class="modal-content hidden">
-        <button class="close-modal-btn">X</button>
-        <div id="solve-quiz-title" class="fake-field">문제 제목</div>
-        <div id="solve-quiz-content" class="fake-field">문제 내용</div>
-        <div id="solve-input-state" style="display:flex; flex-direction:column; gap:12px;">
-          <input id="input-solve-answer" class="field" type="text" placeholder="정답을 적어주세요.">
-          <button id="btn-grade-problem" class="submit-btn">채점</button>
-        </div>
-        <div id="solve-result-state" class="hidden"></div>
-      </div>
+  <button class="close-modal-btn" onclick="closeModal('solve-modal')">X</button>
+  
+  <!-- 문제 제목 -->
+  <div id="solve-quiz-title" class="fake-field" style="text-align: center; font-size: 16px;">문제 제목</div>
+  
+  <!-- 문제 내용 (질문 텍스트가 길어질 수 있으므로 area 클래스 권장) -->
+  <div id="solve-quiz-content" class="area" style="font-weight: 800; min-height: 80px; display: flex; align-items: center; justify-content: center; text-align: center;">
+    문제 내용
+  </div>
+  
+  <!-- 정답 입력/선택 영역 -->
+  <div id="solve-input-state" style="display:flex; flex-direction:column; gap:12px;">
+    
+    <!-- 동적으로 객관식(radio) 또는 주관식(input)이 렌더링될 영역 -->
+    <div id="solve-dynamic-inputs" style="display:flex; flex-direction:column; gap:8px;"></div>
+    
+    <button id="btn-grade-problem" class="submit-btn">채점</button>
+  </div>
+  
+  <!-- 결과창 -->
+  <div id="solve-result-state" class="hidden" style="margin-top: 8px; padding: 12px; border-radius: 8px; font-weight: 800; text-align: center;"></div>
+</div>
+
 
       <!-- 슬롯 관리 모달 -->
       <div id="slot-modal" class="modal-content hidden">
@@ -887,19 +901,128 @@
       if (needsUpdate) { window.Questify.saveState(); if (typeof renderLobbyCharacters === 'function') renderLobbyCharacters(); }
     }
 
-    setInterval(() => {
-      if (memoStorage.length === 0) return;
-      if (Math.random() < 0.5) {
+    // 1. JSON 클렌징 함수
+function cleanAndParseJSON(rawText) {
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith("```")) {
+        cleanText = cleanText.replace(/^```[a-zA-Z]*\n/, "");
+        cleanText = cleanText.replace(/\n```$/, "");
+    }
+    return JSON.parse(cleanText.trim());
+}
+
+// 2. 모크 데이터 생성기
+function generateMockQuiz(type, count) {
+    const numCount = parseInt(count);
+    let pool = [];
+    if (type === 'multiple') {
+        pool = [{ question: "유희왕 OCG에서 프레임 색상이 '의식 청색'인 몬스터 부류는?", choices: ["일반", "의식 몬스터", "융합", "엑시즈"], answer: "의식 몬스터" }];
+    } else if (type === 'tf') {
+        pool = [{ question: "융합 몬스터 카드는 보라색 테두리를 가진다.", choices: ["O", "X"], answer: "O" }];
+    } else {
+        pool = [{ question: "튜너 몬스터와 레벨을 맞춰 소환하는 하얀색 몬스터는?", choices: [], answer: "싱크로" }];
+    }
+    
+    return pool.slice(0, numCount).map((item, idx) => ({
+        id: idx + 1,
+        question: item.question,
+        choices: item.choices,
+        answer: item.answer
+    }));
+}
+
+// 3. AI 기반 퀴즈 생성 핵심 로직
+async function fetchQuizFromGemini(text, type = 'multiple', count = 1, diff = '중 (보통)') {
+    const apiKey = localStorage.getItem('gemini_api_key') || '';
+    
+    if (!apiKey) {
+        return new Promise(resolve => {
+            setTimeout(() => { resolve(generateMockQuiz(type, count)); }, 1200);
+        });
+    }
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const systemInstruction = `너는 입력받은 학습 노트를 바탕으로 학습 퀴즈를 생성하는 AI다.
+[지시사항]
+1. 문제 유형: ${type === 'multiple' ? '객관식 4지선다형' : type === 'tf' ? '진위형 (O/X)' : '주관식 단답형'}
+2. 난이도: ${diff}, 생성 문항 수: ${count}
+3. 순수 JSON 배열만 반환하라. 예: [{"id": 1, "question": "내용", "choices": ["A","B"], "answer": "정답(무조건 보기 중 하나 또는 주관식 정답)"}]`;
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: `다음 노트를 기반으로 문제를 만들어줘:\n\n${text}` }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: { responseMimeType: "application/json" }
+            })
+        });
+
+        if (!response.ok) throw new Error('API 통신 에러');
+        const resData = await response.json();
+        const rawText = resData.candidates[0].content.parts[0].text;
+        return cleanAndParseJSON(rawText);
+    } catch (error) {
+        console.error("Gemini 연동 실패, 모크 데이터로 대체:", error);
+        return generateMockQuiz(type, count);
+    }
+}
+
+// 4. AI 자동 생성 타이머 로직
+let isGeneratingQuiz = false;
+
+setInterval(async () => {
+    if (typeof memoStorage === 'undefined' || memoStorage.length === 0 || isGeneratingQuiz) return;
+    
+    if (Math.random() < 0.5) {
         const randomMemo = memoStorage[Math.floor(Math.random() * memoStorage.length)];
-        const chars = window.Questify.getCharacters(); const targetChar = chars[randomMemo.charIdx];
-        const alreadyHasQuiz = quizStorage.some(q => q.charIdx === randomMemo.charIdx);
+        const chars = window.Questify.getCharacters();
+        const targetChar = chars[randomMemo.charIdx];
+        
+        const alreadyHasQuiz = typeof quizStorage !== 'undefined' && quizStorage.some(q => q.charIdx === randomMemo.charIdx);
 
         if (targetChar && !targetChar.showExclamation && !alreadyHasQuiz) {
-          quizStorage.push({ id: Date.now(), title: "Ai생성 문제 제목", content: "Ai생성 문제 내용", answer: "자유 응답형", charIdx: randomMemo.charIdx });
-          targetChar.showExclamation = true; saveAppData(); window.Questify.saveState(); window.Questify.updateUI(); renderStorageList();
+            isGeneratingQuiz = true;
+            
+            try {
+                const types = ['multiple', 'tf', 'subjective'];
+                const randomType = types[Math.floor(Math.random() * types.length)];
+                
+                const generated = await fetchQuizFromGemini(randomMemo.content, randomType, 1, '중 (보통)');
+                
+                if (generated && generated.length > 0) {
+                    const aiQuiz = generated[0];
+                    let titleText = randomType === 'multiple' ? "객관식 문제" : randomType === 'tf' ? "O/X 퀴즈" : "주관식 문제";
+
+                    quizStorage.push({ 
+                        id: Date.now(), 
+                        title: `[AI 퀴즈] ${titleText}`, 
+                        content: aiQuiz.question,
+                        originalQuestion: aiQuiz.question,
+                        choices: aiQuiz.choices || [],
+                        answer: aiQuiz.answer,
+                        explanation: aiQuiz.explanation || "",
+                        charIdx: randomMemo.charIdx
+                    });
+
+                    targetChar.showExclamation = true; 
+                    if (typeof saveAppData === 'function') saveAppData(); 
+                    if (window.Questify && typeof window.Questify.saveState === 'function') window.Questify.saveState(); 
+                    if (window.Questify && typeof window.Questify.updateUI === 'function') window.Questify.updateUI(); 
+                    if (typeof renderStorageList === 'function') renderStorageList();
+                }
+            } catch (error) {
+                console.error("AI 퀴즈 자동 생성 중 오류 발생:", error);
+            } finally {
+                isGeneratingQuiz = false;
+            }
         }
-      }
-    }, 15000);
+    }
+}, 15000);
+
+
+
 
     window.deleteQuizFromStorage = function (quizId) { showCustomConfirm('이 문제(AI 생성)를 삭제하시겠습니까?', () => { quizStorage = quizStorage.filter(q => q.id !== quizId); syncExclamations(); renderAll(); }); };
     window.openSolveModalFromStorage = function (quizId) { const quiz = quizStorage.find(q => q.id === quizId); if (quiz) setupSolveModal(quiz, false); };
@@ -909,20 +1032,95 @@
       const randomQuiz = charQuizzes[Math.floor(Math.random() * charQuizzes.length)]; setupSolveModal(randomQuiz, true); currentActiveQuiz.isLobbySurprise = true;
     };
 
-    function setupSolveModal(quiz, isSurprise) {
-      currentActiveQuiz = { ...quiz, isSurprise }; document.getElementById('solve-quiz-title').innerText = quiz.title; document.getElementById('solve-quiz-content').innerText = quiz.content;
-      document.getElementById('input-solve-answer').value = ''; document.getElementById('solve-input-state').classList.remove('hidden'); document.getElementById('solve-result-state').className = 'hidden';
-      openSpecificModal('solve-modal');
-      setTimeout(() => document.getElementById('input-solve-answer').focus(), 50);
+    // --- 퀴즈 모달 렌더링 (대소문자 escapeHTML 수정 완료) ---
+function setupSolveModal(quiz, isSurprise) {
+    currentActiveQuiz = { ...quiz, isSurprise }; 
+    
+    document.getElementById('solve-quiz-title').innerText = quiz.title;
+    document.getElementById('solve-quiz-content').innerText = quiz.originalQuestion || quiz.content;
+
+    const dynamicInputs = document.getElementById('solve-dynamic-inputs');
+    dynamicInputs.innerHTML = ''; 
+
+    if (quiz.choices && Array.isArray(quiz.choices) && quiz.choices.length > 0) {
+        quiz.choices.forEach(choice => {
+            // escapeHTML 로 통일
+            dynamicInputs.innerHTML += `
+                <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer; background:#F0E3D3; padding:10px 16px; border-radius:12px; border:3px solid #9A8978; box-shadow: inset 0px -3px 2px 2px rgba(255, 255, 255, 0.4);">
+                    <input type="radio" name="modal_quiz_answer" value="${escapeHTML(choice)}" style="accent-color: #E45154;">
+                    <span>${escapeHTML(choice)}</span>
+                </label>
+            `;
+        });
+    } else {
+        dynamicInputs.innerHTML = `
+            <input id="input-solve-answer" class="field" type="text" placeholder="정답을 적어주세요.">
+        `;
     }
 
-    document.getElementById('btn-grade-problem').addEventListener('click', () => {
-      if (!currentActiveQuiz) return;
-      document.getElementById('solve-input-state').classList.add('hidden'); const resultBox = document.getElementById('solve-result-state'); resultBox.classList.remove('hidden');
-      resultBox.className = 'result-good'; resultBox.innerText = '문제 해결! 경험치를 획득했습니다.'; resultBox.onclick = null;
-      if (window.Questify) window.Questify.gainXP(currentActiveQuiz.isSurprise ? 30 : 20, currentActiveQuiz.charIdx);
-      quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id); syncExclamations(); renderAll();
-    });
+    document.getElementById('solve-input-state').classList.remove('hidden'); 
+    const resultBox = document.getElementById('solve-result-state');
+    resultBox.className = 'hidden';
+    resultBox.innerHTML = '';
+    
+    openSpecificModal('solve-modal');
+    
+    setTimeout(() => {
+        const textInput = document.getElementById('input-solve-answer');
+        if (textInput) textInput.focus();
+    }, 50);
+}
+
+// --- 채점 버튼 클릭 이벤트 (대소문자 escapeHTML 수정 완료) ---
+document.getElementById('btn-grade-problem').addEventListener('click', () => {
+    if (!currentActiveQuiz) return;
+    
+    let userAnswer = "";
+    
+    if (currentActiveQuiz.choices && Array.isArray(currentActiveQuiz.choices) && currentActiveQuiz.choices.length > 0) {
+        const checked = document.querySelector('input[name="modal_quiz_answer"]:checked');
+        if (checked) {
+            userAnswer = checked.value;
+        } else {
+            showCustomAlert ? showCustomAlert("정답을 선택해주세요.") : alert("정답을 선택해주세요.");
+            return;
+        }
+    } else {
+        const textInput = document.getElementById('input-solve-answer');
+        if (textInput) userAnswer = textInput.value;
+    }
+
+    const correctAnswer = (currentActiveQuiz.answer || "").trim().toUpperCase();
+    const isCorrect = userAnswer.trim().toUpperCase() === correctAnswer;
+
+    document.getElementById('solve-input-state').classList.add('hidden'); 
+    const resultBox = document.getElementById('solve-result-state'); 
+    resultBox.classList.remove('hidden');
+
+    if (isCorrect) {
+        resultBox.style.border = '2.5px solid #22c55e';
+        resultBox.style.background = '#dcfce7';
+        resultBox.style.color = '#15803d';
+        // escapeHTML 적용
+        resultBox.innerHTML = `✅ 정답입니다! (제출: ${escapeHTML(userAnswer)})<br>경험치를 획득했습니다!`;
+        
+        if (window.Questify) {
+            window.Questify.gainXP(currentActiveQuiz.isSurprise ? 30 : 20, currentActiveQuiz.charIdx);
+        }
+    } else {
+        resultBox.style.border = '2.5px solid #ef4444';
+        resultBox.style.background = '#fee2e2';
+        resultBox.style.color = '#b91c1c';
+        // escapeHTML 적용
+        resultBox.innerHTML = `❌ 오답입니다. (제출: ${escapeHTML(userAnswer || '미입력')})<br>정답: ${escapeHTML(currentActiveQuiz.answer)}`;
+    }
+
+    quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id); 
+    
+    if (typeof syncExclamations === 'function') syncExclamations(); 
+    if (typeof renderAll === 'function') renderAll();
+});
+
 
     /* --------------------------------------------------------------------------
        [2-7] 로비 캐릭터의 렌더링 및 드래그 제어 로직 
