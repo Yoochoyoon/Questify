@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -1104,7 +1104,7 @@ async function fetchQuizFromGemini(text, type = 'multiple', count = 1, diff = '�
 [지시사항]
 1. 문제 유형: ${type === 'multiple' ? '객관식 4지선다형' : type === 'tf' ? '진위형 (O/X)' : '주관식 단답형'}
 2. 난이도: ${diff}, 생성 문항 수: ${count}
-3. 순수 JSON 배열만 반환하라. 예: [{"id": 1, "question": "내용", "choices": ["A","B"], "answer": "정답(무조건 보기 중 하나 또는 주관식 정답)"}]`;
+3. 순수 JSON 배열만 반환하라. 예: [{"id": 1, "question": "내용", "choices": ["A","B"], "answer": "정답(무조건 보기 중 하나와 동일한 텍스트 또는 주관식 정답)"}]`;
 
     try {
         const response = await fetch(endpoint, {
