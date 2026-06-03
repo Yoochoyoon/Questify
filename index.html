@@ -1072,7 +1072,7 @@
       const apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) return null; // API키 미등록 시 통신 중단 처리
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const systemPrompt = `너는 입력받은 학습 노트를 바탕으로 학습 퀴즈를 생성하는 AI다.
 [지시사항]
 1. 문제 유형: 주관식 단답형
