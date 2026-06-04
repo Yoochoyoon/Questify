@@ -192,6 +192,14 @@
     }
 
     /* 전체 유니온 상태 카드 */
+    #slot-modal{
+      width: 80%;
+    }
+    
+    #slot-manager-container{
+      width: 80%;
+    margin: auto;
+    }
 
     #btn-reset-all-data {
       flex: 1;
@@ -230,7 +238,7 @@
       font-size: 22px;
       font-weight: 900;
       color: #362a16;
-      width: 38rem;
+      width: 45rem;
       box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2);
     }
 

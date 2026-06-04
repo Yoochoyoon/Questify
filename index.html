@@ -16,7 +16,7 @@
     <div id="left-panel" class="panel">
       <!-- 1. 메인 게임 화면: 현재 진척도(HUD)와 캐릭터(유니온)들을 시각적으로 띄워주는 공간 -->
       <div id="game-screen" class="screen">
-        
+
         <!-- 상단 HUD 영역 (좌측 상단: 진행도, 우측 상단: 프로필) -->
         <div class="top-hud">
           <div>
@@ -39,7 +39,7 @@
 
       <!-- 2. 집중 타이머 화면: 기본 상태에선 숨김(hidden)되어 있으며, 우측 하단 시계 아이콘 클릭 시 표시됩니다. -->
       <div id="timer-screen" class="screen hidden">
-        
+
         <!-- 타이머 시작 전 띄워지는 오버레이 팝업 (함께할 캐릭터를 선택하도록 유도) -->
         <div id="timer-char-select" class="timer-char-select-overlay">
           <div class="timer-char-select-box">
@@ -54,7 +54,7 @@
         <!-- 캐릭터 선택을 완료하면 나타나는 타이머 메인 인터페이스 -->
         <div id="timer-main" class="hidden">
           <button id="close-timer-btn" class="round-close">X</button>
-          
+
           <div class="timer-layout">
             <!-- 상단부: 말풍선 텍스트와 선택된 캐릭터 렌더링 영역 -->
             <div class="timer-top">
@@ -63,11 +63,11 @@
                   <p style="margin:0;">타이머로 공부 시간을 설정하자!</p>
                 </div>
               </div>
-              
+
               <!-- 선택된 타이머 캐릭터가 출력되는 래퍼 및 HUD 오버레이 -->
               <div class="timer-character">
                 <div class="timer-char-img-wrap">
-                  
+
                   <!-- 타이머 전용 캐릭터 HUD (캐릭터 머리 위에 이름, 레벨, XP바가 나타남) -->
                   <div class="timer-char-hud">
                     <div class="timer-char-hud-name" id="timer-char-hud-name">이름</div>
@@ -76,16 +76,16 @@
                       <div class="timer-char-hud-xpfill" id="timer-char-hud-xpfill"></div>
                     </div>
                   </div>
-                  
+
                   <!-- 파츠 기반 캐릭터 합성 렌더링 뷰 영역 -->
                   <div class="char-body" id="timer-main-char-body" style="width: 100%; position: relative;">
                     <!-- 자바스크립트에서 선택된 캐릭터의 SD 이미지 요소들이 주입됩니다. -->
                   </div>
-                  
+
                 </div>
               </div>
             </div>
-            
+
             <!-- 하단부: 시계 디스플레이와 제어 컨트롤 패널 -->
             <div class="timer-card">
               <div class="timer-display-wrap">
@@ -132,18 +132,19 @@
 
       <!-- 일일퀘스트 탭 뷰 -->
       <div id="panel-quest" class="panel-view">
-        
+
         <!-- 오리지널 헤더 레이아웃 복원 -->
         <div style="position: relative;">
           <!-- 로그 버튼과 비우기 버튼을 묶어서 패널 타이틀 왼쪽에 절대 정렬 -->
-          <div style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; z-index: 10; align-items: center;">
+          <div
+            style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; z-index: 10; align-items: center;">
             <button id="btn-toggle-log" class="mini-btn" style="background: #555; margin: 0;">로그</button>
             <!-- 로그 비우기 버튼. 로그 모드일때만 스크립트를 통해 보여집니다. -->
             <button id="btn-clear-log" class="mini-btn hidden" style="background: #ef4444; margin: 0;">비우기</button>
           </div>
           <h1 class="panel-title" id="quest-panel-title">일일퀘스트</h1>
         </div>
-        
+
         <!-- 사용자가 기록한 퀘스트 항목들이 렌더링되어 삽입되는 리스트 컨테이너 -->
         <div id="quest-list-container" class="list"></div>
       </div>
@@ -151,14 +152,16 @@
       <!-- 퀴즈 퀘스트(기존 문제저장소) 탭 뷰: 숨겨져 있다가 하단 탭 클릭시 나타납니다. -->
       <div id="panel-storage" class="panel-view hidden">
         <h1 class="panel-title">퀴즈퀘스트</h1>
-        
+
         <!-- 생성된 AI 퀴즈 데이터들이 리스팅 되는 공간 -->
         <div id="storage-list-container" class="list"></div>
       </div>
 
       <!-- 타이머 진입용 플로팅 아이콘 모션 버튼 -->
       <div id="open-timer-btn">
-        <img src="타이머.png" alt="timer-icon" onerror="this.style.display='none'; this.parentElement.innerText='⏱️'; this.parentElement.style.fontSize='30px';" style="width: 50px;">
+        <img src="타이머.png" alt="timer-icon"
+          onerror="this.style.display='none'; this.parentElement.innerText='⏱️'; this.parentElement.style.fontSize='30px';"
+          style="width: 50px;">
       </div>
 
       <!-- 화면 맨 하단의 고정 네비게이션 탭 바 -->
@@ -185,7 +188,9 @@
       <div id="char-memo-modal" class="modal-content hidden">
         <button class="close-modal-btn">X</button>
         <h2 id="char-memo-title" style="text-align:center; margin-top:0;">학습 메모</h2>
-        <div id="char-memo-list" style="flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding: 2px;"></div>
+        <div id="char-memo-list"
+          style="flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding: 2px;">
+        </div>
         <button id="btn-open-notepad" class="submit-btn" style="width:100%; margin-top:auto;">+ 새 메모 작성</button>
       </div>
 
@@ -193,7 +198,8 @@
       <div id="notepad-modal" class="modal-content hidden">
         <button class="close-modal-btn">X</button>
         <h2 style="text-align:center; margin-top:0;">학습 메모장</h2>
-        <div style="font-size:12px; color:#4b5563; margin-bottom:8px; text-align:center;" id="notepad-target-char-label"></div>
+        <div style="font-size:12px; color:#4b5563; margin-bottom:8px; text-align:center;"
+          id="notepad-target-char-label"></div>
         <textarea id="input-notepad-content" class="area" placeholder="공부한 내용을 이곳에 메모하세요!"></textarea>
         <button id="btn-submit-notepad" class="submit-btn" style="background:#59A3F8; margin-top:auto;">저장</button>
       </div>
@@ -224,12 +230,12 @@
         <button class="close-modal-btn">X</button>
         <h2 id="union-level-display">전체 유니온 Lv.0</h2>
         <div id="slot-manager-container"></div>
-        <div style="display:flex; flex-direction:column; gap:8px; margin-top:auto; width:100%;">
-          <div style="display:flex; gap:8px;">
-            <button id="btn-add-new-character" style="flex:1; padding: 12px 0; border: 3px solid #000; border-radius: 8px; background: #e5e7eb; font-weight: 900;">새 캐릭터 추가</button>
-            <button id="btn-api-key" style="flex:1; padding: 12px 0; border: 3px solid #000; border-radius: 8px; background: #3b82f6; color: #fff; font-weight: 900;">API 키 설정</button>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:auto; width:100%; justify-content: center; align-items: center;">
+          <div style="display:flex; gap:8px; width: 47rem;">
+            <button id="btn-reset-all-data" class="danger-btn;">전체 데이터 삭제</button>
+            <button id="btn-api-key">API키 설정</button>
           </div>
-          <button id="btn-reset-all-data" class="danger-btn" style="width:100%;">전체 데이터 삭제</button>
+          <button id="btn-add-new-character">새캐릭터 추가</button>
         </div>
       </div>
     </div> <!-- modal-overlay end -->
@@ -239,14 +245,18 @@
       <!-- 단순 메시지 알림용 다이얼로그 (Alert) -->
       <div id="custom-alert" class="modal-content modal-mini hidden">
         <h3 style="text-align:center; margin-top:0;">알림</h3>
-        <p id="custom-alert-msg" style="text-align:center; margin-bottom: 20px; font-size: 14px; white-space: pre-line; word-break: keep-all;"></p>
+        <p id="custom-alert-msg"
+          style="text-align:center; margin-bottom: 20px; font-size: 14px; white-space: pre-line; word-break: keep-all;">
+        </p>
         <button id="custom-alert-btn" class="submit-btn" style="width: 100%; margin-top:auto;">확인</button>
       </div>
 
       <!-- 선택 확인/취소용 다이얼로그 (Confirm) -->
       <div id="custom-confirm" class="modal-content modal-mini hidden">
         <h3 style="text-align:center; margin-top:0;">확인</h3>
-        <p id="custom-confirm-msg" style="text-align:center; margin-bottom: 20px; font-size: 14px; white-space: pre-line; word-break: keep-all;"></p>
+        <p id="custom-confirm-msg"
+          style="text-align:center; margin-bottom: 20px; font-size: 14px; white-space: pre-line; word-break: keep-all;">
+        </p>
         <div style="display:flex; gap:10px; margin-top:auto;">
           <button id="custom-confirm-cancel" class="danger-btn" style="flex:1;">취소</button>
           <button id="custom-confirm-ok" class="submit-btn" style="flex:1;">확인</button>
@@ -266,7 +276,8 @@
       <!-- 옵션 선택 콤보박스 다이얼로그 (Select) -->
       <div id="custom-select" class="modal-content modal-mini hidden">
         <h3 id="custom-select-title" style="text-align:center; margin-top:0;">선택</h3>
-        <p id="custom-select-msg" style="text-align:center; margin-bottom: 12px; font-size: 14px; white-space: pre-line;"></p>
+        <p id="custom-select-msg"
+          style="text-align:center; margin-bottom: 12px; font-size: 14px; white-space: pre-line;"></p>
         <select id="custom-select-input" class="field" style="margin-bottom: 20px;"></select>
         <button id="custom-select-ok" class="submit-btn" style="width: 100%; margin-top:auto;">확인</button>
       </div>
@@ -279,7 +290,7 @@
     [시스템 스크립트 파트 1] 데이터 상태 관리 (캐릭터 유니온 및 경험치)
     ========================================================================== 
   -->
-  <script>
+ <script>
     (function () {
       'use strict';
 
