@@ -651,6 +651,44 @@
       transition: width 0.3s;
     }
 
+/* 둥실 떠오르는 +5 XP 텍스트 스타일 수정본 */
+.xp-floating-text {
+  position: absolute;
+  
+  /* [수정] 기존 -20px에서 더 위쪽인 -50px로 변경 (원하는 높이에 따라 숫자 조절 가능) */
+  top: -35px;         
+  
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;    
+  font-weight: 900;
+  color: #22c55e;     
+  text-shadow: 
+    -2px -2px 0 #000,  
+     2px -2px 0 #000,
+    -2px  2px 0 #000,
+     2px  2px 0 #000; 
+  pointer-events: none;
+  z-index: 9999;      
+  
+  /* [핵심 추가] 글자가 좁은 영역 때문에 2줄로 줄바꿈되는 것을 원천 차단 */
+  white-space: nowrap;
+  width: max-content;
+
+  animation: floatUpAndFade 1.2s ease-out forwards;
+}
+
+@keyframes floatUpAndFade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40px); /* 1.2초 동안 위로 40px 상승하며 소멸 */
+  }
+}
+
     /* 타이머 시간/버튼을 감싸는 박스 */
     .timer-card {
       z-index: 20;
