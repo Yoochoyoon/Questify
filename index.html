@@ -1045,13 +1045,13 @@
     });
 
     /* --------------------------------------------------------------------------
-       [2-6] AI 자동 생성 문제 (문제 저장소 및 Gemini API 연동) 파트 
+       [2-6] AI 자동 생성 문제 (문제 저장소 및 FactChat Gateway 연동) 파트 
        -------------------------------------------------------------------------- */
 
     // 슬롯모달 하단의 버튼으로부터 연결되는 프롬프트 호출 창
     document.getElementById('btn-api-key').addEventListener('click', () => {
       const currentKey = localStorage.getItem('gemini_api_key') || '';
-      showCustomPrompt('Gemini API 키를 입력하세요:', currentKey, (newKey) => {
+      showCustomPrompt('FactChat Gateway API 키를 입력하세요:', currentKey, (newKey) => {
         if (newKey !== null && newKey.trim() !== '') {
           localStorage.setItem('gemini_api_key', newKey.trim());
           showCustomAlert('API 키가 저장되었습니다.');
@@ -1059,7 +1059,7 @@
       });
     });
 
-    /** (가이드 4-B) LLM 응답 포맷의 불확실성 대응 - 강건한 JSON 클렌징 함수 */
+    /** LLM 응답 포맷의 불확실성 대응 - 강건한 JSON 클렌징 함수 */
     function cleanAndParseJSON(rawText) {
       try {
         // [ ] 배열 구조로 정확히 떨어지는 텍스트 묶음만 검출
@@ -1077,12 +1077,13 @@
       }
     }
 
-    /** (가이드 2-A) Google Gemini Flash API와 직접 통신하여 사용자가 작성한 노트를 분석, 퀴즈를 반환받습니다. */
+    /** FactChat Gateway(OpenAI 호환 포맷)를 통해 Gemini 모델을 호출하여 퀴즈를 생성합니다. */
     async function fetchQuizFromGemini(text, type = 'short') {
       const apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) return null; // API키 미등록 시 통신 중단 처리
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      // 마인드로직 FactChat 게이트웨이 엔드포인트
+      const endpoint = `https://factchat-cloud.mindlogic.ai/v1/gateway/chat/completions/`;
       let typeStr = '';
       let formatGuide = '';
       
@@ -1109,34 +1110,39 @@
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}` // 게이트웨이 인증 헤더
+          },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: userPrompt }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            generationConfig: { responseMimeType: "application/json" }
+            model: "gemini-2.5-flash", // 사용할 모델 명시
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ]
           })
         });
 
-        if (!response.ok) throw new Error('Gemini API 통신 에러');
+        if (!response.ok) throw new Error('Gateway API 통신 에러');
         const resData = await response.json();
 
-        // Gemini Response 구조 심층 탐색
-        const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+        // OpenAI Chat Completions 응답 구조에 맞춘 파싱
+        const rawText = resData.choices?.[0]?.message?.content;
         if (!rawText) return null;
         return cleanAndParseJSON(rawText);
       } catch (error) {
-        // (가이드 4-D) API 실패 시 Mock 데이터 대신 null 반환하여 조용히 건너뛰기
-        console.error("Gemini 연동 실패:", error);
+        console.error("Gateway 연동 실패:", error);
         return null; 
       }
     }
     
-    /** Gemini API를 사용한 주관식 AI 채점 및 해설 생성 */
+    /** FactChat Gateway를 사용한 주관식 AI 채점 및 해설 생성 */
     async function gradeWithAI(question, correctAnswer, userAnswer) {
       const apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) return null; // API키 미등록 시 통신 중단 처리, 폴백(단순 비교)으로 넘어갑니다.
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      // 마인드로직 FactChat 게이트웨이 엔드포인트
+      const endpoint = `https://factchat-cloud.mindlogic.ai/v1/gateway/chat/completions/`;
       const systemPrompt = `너는 학생의 주관식 답변을 유연하게 채점하는 AI 선생님이다.
 [지시사항]
 1. 문제, 모범 정답, 그리고 학생의 제출 답안이 주어진다.
@@ -1149,18 +1155,24 @@
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}` // 게이트웨이 인증 헤더
+          },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: userPrompt }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            generationConfig: { responseMimeType: "application/json" }
+            model: "gemini-2.5-flash", // 사용할 모델 명시
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ]
           })
         });
 
-        if (!response.ok) throw new Error('Gemini API 통신 에러');
+        if (!response.ok) throw new Error('Gateway API 통신 에러');
         const resData = await response.json();
-        const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
         
+        // OpenAI Chat Completions 응답 구조에 맞춘 파싱
+        const rawText = resData.choices?.[0]?.message?.content;
         if (!rawText) return null;
         
         // JSON 파싱 (객체 추출)
@@ -1237,7 +1249,7 @@
 
           const generated = await fetchQuizFromGemini(randomMemo.content, quizType);
           
-          // (가이드 4-C) 데이터 패치 도중 캐릭터가 지워졌을 가능성에 대비한 런타임 에러 방지 안전 검증
+          // 데이터 패치 도중 캐릭터가 지워졌을 가능성에 대비한 런타임 에러 방지 안전 검증
           const currentChars = window.Questify.getCharacters();
           const aliveChar = currentChars[randomMemo.charIdx];
           
@@ -1277,7 +1289,7 @@
       const randomQuiz = charQuizzes[Math.floor(Math.random() * charQuizzes.length)]; setupSolveModal(randomQuiz, true); currentActiveQuiz.isLobbySurprise = true;
     };
 
-    /** (가이드 5-A) 퀴즈 풀이용 모달 창 제어 컴포넌트 - OX UI 스위칭 로직 포함 */
+    /** 퀴즈 풀이용 모달 창 제어 컴포넌트 - OX UI 스위칭 로직 포함 */
     function setupSolveModal(quiz, isSurprise) {
       currentActiveQuiz = { ...quiz, isSurprise }; 
       document.getElementById('solve-quiz-title').innerText = quiz.title; 
@@ -1326,7 +1338,7 @@
       openSpecificModal('solve-modal');
     }
 
-    /** (가이드 5-B) 통합 채점 로직 처리 - AI 유연한 채점 및 해설 제공 기능 추가 */
+    /** 통합 채점 로직 처리 - AI 유연한 채점 및 해설 제공 기능 추가 */
     async function processGrading(userAnswer) {
       if (!currentActiveQuiz) return;
 
