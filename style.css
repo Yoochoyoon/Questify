@@ -1,1955 +1,437 @@
     /* ==========================================================================
-       [1] 전역 초기화 및 기본 박스 모델
+       [1] 전역 초기화 및 기본 박스 모델 설정
        ========================================================================== */
-    * {
-      box-sizing: border-box;
-      /* 패딩과 테두리를 요소의 크기에 포함 */
-    }
-
-    html,
+    /* 모든 요소의 너비와 높이 계산 시 패딩과 테두리를 포함하도록 강제한다. */
+    * { box-sizing: border-box; }
+    
+    /* 문서 전체의 기본 여백을 제거하고 크기를 화면 전체로 확장한다. */
+    html, body { margin: 0; width: 100%; height: 100%; }
+    
+    /* body 레이아웃 설정: 뷰포트 크기에 맞추며, 모바일 브라우저 툴바를 고려해 100dvh를 사용한다. 
+       배경 이미지와 블러 효과를 적용하고 드래그(user-select)를 차단한다. */
     body {
-      margin: 0;
-      /* 기본 여백 제거 */
-      width: 100%;
-      height: 100%;
-    }
-
-    body {
-      width: 100vw;
-      height: 100dvh;
-      /* 모바일 브라우저 툴바를 고려한 동적 뷰포트 높이 설정 */
-      overflow: hidden;
-      /* 스크롤바 숨김 */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-image: url('bg.png');
-      /* 배경 이미지 */
-      background-position: center;
-      background-repeat: no-repeat;
-      background-size: cover;
-      /* 배경 이미지 화면에 맞춤 */
-      backdrop-filter: blur(3px) brightness(0.7);
-      /* 배경 흐림 및 밝기 조절 효과 */
-      font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-      /* 기본 폰트 설정 */
+      width: 100vw; height: 100dvh; overflow: hidden; display: flex; justify-content: center; align-items: center;
+      background-image: url('bg.png'); background-position: center; background-repeat: no-repeat; background-size: cover;
+      backdrop-filter: blur(3px) brightness(0.7); font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       user-select: none;
-      /* 텍스트 선택 방지 */
     }
+    
+    /* 폼 컨트롤 요소들이 부모 폰트를 상속받도록 처리한다. */
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
 
-    button,
-    input,
-    textarea,
-    select {
-      font: inherit;
-      /* 부모 요소의 폰트 상속 */
+    /* 키보드 내비게이션 시 포커스된 요소를 시각적으로 명확히 표시하기 위한 파란색 테두리 효과를 지정한다. */
+    :focus-visible {
+      outline: 3px solid #3b82f6 !important; outline-offset: 2px !important;
+      box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3) !important; z-index: 100; border-radius: 6px;
+      transition: all 0.2s ease-in-out;
     }
-
-    button {
-      cursor: pointer;
-      /* 마우스 오버 시 포인터 변경 */
-    }
+    /* 마우스 클릭 등 포커스 링이 불필요한 상황에서는 아웃라인을 숨긴다. */
+    :focus:not(:focus-visible) { outline: none !important; }
 
     /* ==========================================================================
        [2] 앱 전체 레이아웃 (App Container)
        ========================================================================== */
-    .app {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      /* 세로 방향으로 요소 배치 */
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      gap: 4px;
-      /* 요소 간격 설정 */
-      padding: 0;
-      background: #fff;
-      border: 3px solid #000;
-    }
-
-    /* 공통 패널 스타일 */
-    .panel {
-      position: relative;
-      overflow: hidden;
-      border: 4px solid #000;
-      transition: all .3s ease;
-      /* 부드러운 전환 효과 */
-    }
-
-    /* 좌측 메인 패널 (게임 화면, 타이머) */
-    #left-panel {
-      width: 100%;
-      height: 45%;
-      flex-shrink: 0;
-      background: #fff;
-      transition: height 0.3s ease;
-    }
-
-    /* 우측 퀘스트/저장소 패널 래퍼 */
-    #right-panel-wrapper {
-      flex: 1;
-      /* 남은 공간 모두 차지 */
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      background: radial-gradient(#92785E, #91775D);
-      /* 그라데이션 배경 */
-      border: 4px solid black;
-    }
-
-    /* 저장소(퀴즈) 패널 특화 배경 */
-    #panel-storage {
-      background: radial-gradient(#7387bb, #5D6C91);
-    }
-
-    /* 화면 전환용 공통 스크린 클래스 */
-    .screen {
-      position: relative;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-image: url('https://cdn.midjourney.com/cf76b61d-7ffd-440b-a9b9-0755c0b7eeed/0_0.png');
-      /* 게임 화면 배경 */
-      background-position: center;
-      background-repeat: no-repeat;
-      background-size: cover;
-    }
-
-    /* 요소 숨김 클래스 */
-    .hidden {
-      display: none !important;
-    }
+    /* 전체 애플리케이션의 최상위 컨테이너 구조를 세로 배열(column)로 설정한다. */
+    .app { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; gap: 4px; padding: 0; background: #fff; border: 3px solid #000; }
+    
+    /* 공통 패널 스타일: 테두리 및 상태 변화 시 애니메이션 전환 효과를 부여한다. */
+    .panel { position: relative; overflow: hidden; border: 4px solid #000; transition: all .3s ease; }
+    
+    /* 좌측 영역 (상단 패널): 게임 화면 및 타이머 UI가 배치되는 영역이다. */
+    #left-panel { width: 100%; height: 45%; flex-shrink: 0; background: #fff; transition: height 0.3s ease; }
+    
+    /* 우측 영역 (하단 패널): 퀘스트 및 저장소 리스트가 배치되는 영역이다. 남은 공간(flex: 1)을 모두 차지한다. */
+    #right-panel-wrapper { flex: 1; width: 100%; display: flex; flex-direction: column; background: radial-gradient(#92785E, #91775D); border: 4px solid black; }
+    
+    /* 저장소(퀴즈) 전용 패널 배경색을 지정한다. */
+    #panel-storage { background: radial-gradient(#7387bb, #5D6C91); }
+    
+    /* 각 화면(게임 화면, 타이머 화면 등)에 공통으로 적용되는 배경 이미지 및 배치 속성이다. */
+    .screen { position: relative; inset: 0; width: 100%; height: 100%; overflow: hidden; background-image: url('https://cdn.midjourney.com/cf76b61d-7ffd-440b-a9b9-0755c0b7eeed/0_0.png'); background-position: center; background-repeat: no-repeat; background-size: cover; }
+    
+    /* 요소를 완전히 숨길 때 사용하는 유틸리티 클래스이다. */
+    .hidden { display: none !important; }
 
     /* ==========================================================================
        [3] 좌측 패널 내부 요소 (HUD & 로비 캐릭터)
        ========================================================================== */
-    /* 최상단 HUD 영역 (목표, 프로필 등) */
-    .top-hud {
-      position: absolute;
-      left: 0;
-      top: 0;
-      z-index: 30;
-      /* 캐릭터나 배경보다 위에 표시 */
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 8px;
-      pointer-events: none;
-      /* 클릭 이벤트 통과 (하위 요소에만 개별 적용) */
-    }
-
-    /* HUD 내부 상호작용 가능 요소 */
-    .top-hud>* {
-      pointer-events: auto;
-    }
-
-    .goal-title {
-      margin: 0 0 0 2.5%;
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    /* 진행도 바 래퍼 */
-    .progress-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 100%;
-      height: 24px;
-      margin: 4px auto 0;
-      overflow: hidden;
-      border: 2px solid #000;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 5px;
-      box-shadow: inset 0px 1px 1px 20px rgba(0, 0, 0, 0.318);
-    }
-
-    /* 실제 채워지는 진행도 게이지 */
-    #progress-bar-fill {
-      width: 0;
-      height: 100%;
-      transition: width .3s;
-      /* 부드럽게 차오르는 애니메이션 */
-      background: #2EADE3;
-      box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.4), inset 0px 0px 4.5px 3px rgba(97, 202, 219, 0.2), inset 1px 13px rgba(255, 255, 255, 0.177);
-      border-radius: 5px;
-    }
-
-    /* 진행도 퍼센트/수치 텍스트 */
-    #progress-text {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 10px;
-      font-weight: 800;
-      color: white;
-      text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black;
-      /* 글자 검은 테두리 */
-    }
-
-    /* 전체 유니온 상태 카드 */
-    #slot-modal{
-      width: 80%;
-    }
+    /* 화면 최상단에 배치되는 정보(HUD) 영역이다. 클릭 이벤트를 통과(pointer-events: none)시키되 내부 자식은 허용한다. */
+    .top-hud { position: absolute; left: 0; top: 0; z-index: 30; width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 8px; pointer-events: none; }
+    .top-hud>* { pointer-events: auto; }
     
-    #slot-manager-container{
-      width: 80%;
-    margin: auto;
-    }
+    /* 오늘의 목표 진행도를 나타내는 텍스트 타이틀이다. */
+    .goal-title { margin: 0 0 0 2.5%; font-size: 14px; font-weight: 800; }
+    
+    /* 퀘스트 클리어 진행도 바의 외부 컨테이너이다. */
+    .progress-wrap { position: relative; width: 100%; max-width: 100%; height: 24px; margin: 4px auto 0; overflow: hidden; border: 2px solid #000; background: rgba(0, 0, 0, 0.6); border-radius: 5px; box-shadow: inset 0px 1px 1px 20px rgba(0, 0, 0, 0.318); }
+    
+    /* 실제 채워지는 진행도 게이지이며, width 속성으로 진행 상태를 시각화한다. */
+    #progress-bar-fill { width: 0; height: 100%; transition: width .3s; background: #2EADE3; box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 0.4), inset 0px 0px 4.5px 3px rgba(97, 202, 219, 0.2), inset 1px 13px rgba(255, 255, 255, 0.177); border-radius: 5px; }
+    
+    /* 진행도 퍼센트/수치를 표시하는 텍스트 중앙 정렬 속성이다. */
+    #progress-text { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: 800; color: white; text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black; }
 
-    #btn-reset-all-data {
-      flex: 1;
-      padding: 12px 0;
-      border: 3px solid #000;
-      border-radius: 8px;
-      background: #c03737;
-      color: #fff;
+    /* 슬롯(캐릭터 관리) 모달의 모바일 최적화 너비 제어 속성이다. */
+    #slot-modal { width: 90%; max-width: 600px; padding: 16px; }
+    
+    /* 데이터 전체 삭제, API 키 설정, 새 캐릭터 추가 버튼의 디자인을 각각 지정한다. */
+    #btn-reset-all-data { padding: 12px 0; border: 3px solid #000; border-radius: 8px; background: #c03737; color: #fff; font-weight: 900; width: 100%; box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0), inset 0px -4px 2px 4px rgba(255, 255, 255, 0); }
+    #btn-api-key { padding: 12px 0; border: 3px solid #000; border-radius: 8px; background: #3b82f6; color: #fff; font-weight: 900; width: 100%; }
+    #btn-add-new-character { padding: 16px 12px; border: 3px solid #000; border-radius: 8px; background: #e8ef08; color: #362a16; font-size: 20px; font-weight: 900; width: 100%; box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2); }
 
-      font-weight: 900;
-      margin-left: 1rem;
-      margin-right: 1rem;
-      box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0), inset 0px -4px 2px 4px rgba(255, 255, 255, 0);
-    }
+    /* 유니온(전체 레벨 합산) 정보를 보여주는 프로필 카드 영역이다. */
+    #user-profile-card { width: 120px; margin-left: 2.5%; padding: 6px; background: rgba(0, 0, 0, 0.46); box-shadow: 0px 0px 9.1px -1px rgba(255, 255, 255, 0.3), inset 0px 0px 15.3px -5px rgba(0, 0, 0, 0.39); border-radius: 10px; transition: transform .15s; cursor: pointer; outline: none; }
+    #user-profile-card:hover { transform: scale(1.05); }
+    .profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 800; color: white; text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black; }
+    .profile-level { margin-top: 2px; color: rgb(0, 255, 0); font-size: 11px; font-weight: 900; text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black; }
 
-    #btn-api-key {
-      flex: 1;
-      padding: 12px 0;
-      border: 3px solid #000;
-      border-radius: 8px;
-      background: #3b82f6;
-      color: #fff;
-      font-weight: 900;
-      margin-left: 1rem;
-      margin-right: 1rem;
-    }
+    /* 로비 캐릭터들이 자유롭게 배치될 컨테이너이다. */
+    #lobby-container { position: absolute; inset: 0; pointer-events: none; }
+    
+    /* 로비에 존재하는 개별 캐릭터 객체이다. 자유로운 드래그를 위해 pointer-events를 부여한다. */
+    .lobby-char { position: absolute; display: flex; flex-direction: column; align-items: center; pointer-events: auto; touch-action: none; cursor: pointer; width: 27px; z-index: 20; outline: none; }
+    .lobby-char:active { cursor: grabbing; }
 
-    #btn-add-new-character {
-      flex-shrink: 0;
-      height: 5rem;
-      padding: 12px 16px;
-      border: 3px solid #000;
-      border-radius: 8px;
-      background: #e8ef08;
-      color: #fff;
-      font-size: 22px;
-      font-weight: 900;
-      color: #362a16;
-      width: 45rem;
-      box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2);
-    }
+    /* 퀴즈가 준비되었음을 알리는 느낌표 마커이다. 튀어오르는 애니메이션(bounceExclamation)이 적용된다. */
+    .char-exclamation { position: absolute; top: -20px; font-size: 14px; font-weight: 900; color: #fff; background: #FF2E56; border: 2px solid #000; border-radius: 50%; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0px 3px 0px #000, 0px 0px 10px rgba(255, 0, 0, 0.6); cursor: pointer; z-index: 30; animation: bounceExclamation 0.5s infinite alternate ease-in-out; }
+    .char-exclamation:active { transform: scale(0.9); }
+    @keyframes bounceExclamation { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
 
-    #user-profile-card {
-      width: 120px;
-      margin-left: 2.5%;
-      padding: 6px;
-      background: rgba(0, 0, 0, 0.46);
-      box-shadow: 0px 0px 9.1px -1px rgba(255, 255, 255, 0.3), inset 0px 0px 15.3px -5px rgba(0, 0, 0, 0.39);
-      border-radius: 10px;
-      transition: transform .15s;
-      cursor: pointer;
-    }
+    /* 로비 캐릭터의 하단 이름과 레벨 텍스트 표기 영역이다. */
+    .char-nameplate { margin-bottom: 4px; font-weight: 800; color: white; text-align: center; background: transparent; padding: 0; line-height: 1.2; display: flex; flex-direction: column; align-items: center; width: 80px; }
+    .char-name-text { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; margin-bottom: 2px; text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black; }
+    .char-level-text { color: #a3e635; font-size: 10px; line-height: 1; text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black; }
+    
+    /* 캐릭터 아바타 파츠 이미지들을 합성(포개어 렌더링)하기 위한 래퍼이다. */
+    .char-body { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; }
+    .char-body img { width: 100%; height: auto; display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 
-    #user-profile-card:hover {
-      transform: scale(1.05);
-      /* 마우스 호버 시 살짝 커짐 */
-    }
-
-    .profile-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      /* 글자가 길면 ... 처리 */
-      white-space: nowrap;
-      font-size: 10px;
-      font-weight: 800;
-      color: white;
-      text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black;
-    }
-
-    .profile-level {
-      margin-top: 2px;
-      color: rgb(0, 255, 0);
-      font-size: 11px;
-      font-weight: 900;
-      text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-    }
-
-    /* 로비 캐릭터 배치 컨테이너 */
-    #lobby-container {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-
-    /* 개별 로비 캐릭터 컴포넌트 */
-    .lobby-char {
-      position: absolute;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      pointer-events: auto;
-      /* 상호작용 허용 */
-      touch-action: none;
-      /* 브라우저 기본 터치 액션 방지 (커스텀 드래그 위해) */
-      cursor: pointer;
-      width: 27px;
-      /*transform: translate(-50%, -50%); /* 중앙 정렬 기준점 맞춤 */
-      z-index: 20;
-
-    }
-
-    .lobby-char:active {
-      cursor: grabbing;
-      /* 드래그 중 커서 변경 */
-    }
-
-    /* 캐릭터 머리 위 퀴즈 알림 느낌표 */
-    .char-exclamation {
-      position: absolute;
-      top: -20px;
-      font-size: 14px;
-      font-weight: 900;
-      color: #fff;
-      background: #FF2E56;
-      border: 2px solid #000;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0px 3px 0px #000, 0px 0px 10px rgba(255, 0, 0, 0.6);
-      cursor: pointer;
-      z-index: 30;
-      animation: bounceExclamation 0.5s infinite alternate ease-in-out;
-      /* 통통 튀는 애니메이션 */
-    }
-
-    .char-exclamation:active {
-      transform: scale(0.9);
-    }
-
-    @keyframes bounceExclamation {
-      0% {
-        transform: translateY(0);
-      }
-
-      100% {
-        transform: translateY(-8px);
-      }
-    }
-
-    /* 캐릭터 이름표 영역 */
-    .char-nameplate {
-      margin-bottom: 4px;
-      font-weight: 800;
-      color: white;
-      text-align: center;
-      background: transparent;
-      padding: 0;
-      line-height: 1.2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 80px;
-    }
-
-    .char-name-text {
-      font-size: 11px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-      margin-bottom: 2px;
-      text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black;
-    }
-
-    .char-level-text {
-      color: #a3e635;
-      font-size: 10px;
-      line-height: 1;
-      text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black;
-    }
-
-    /* 캐릭터 아바타(이미지) 파츠 합성 영역 */
-    .char-body {
-      position: relative;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-
-    }
-
-    .char-body img {
-      width: 100%;
-      height: auto;
-      display: block;
-      user-select: none;
-      -webkit-user-drag: none;
-      /* 이미지 드래그 방지 */
-      pointer-events: none;
-
-    }
-
-    /* 파츠별 Z-index 계층 설정 */
-    .char-part-base {
-      z-index: 1;
-      position: relative;
-    }
-
-    .char-part-bottom {
-      position: absolute;
-      bottom: 5.5px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 2;
-      width: 65% !important;
-      height: 30% !important;
-    }
-
-    .char-part-head {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 3;
-      width: 110%;
-    }
-
-    img[src*="chrhair5"] {
-      top: -6px;
-      width: 110%
-    }
-
-    img[src*="chrhair3"] {
-      top: -1px;
-      width: 105%
-    }
-
-
-
-    /* 캐릭터 개별 경험치 바 */
-    .char-xp-bar-container {
-      width: 30px;
-      height: 4px;
-      background: rgba(0, 0, 0, 0.8);
-      border: 1px solid #000;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-
-    .char-xp-bar-fill {
-      height: 100%;
-      background: #a3e635;
-      transition: width 0.3s ease;
-    }
-
-    /* 가끔씩 튀어나오는 말풍선 */
-    .char-bubble {
-      position: absolute;
-      top: -45px;
-      background: rgb(255, 232, 205);
-      border: 3px solid rgb(86, 63, 44);
-      border-radius: 20px;
-      padding: 8px 16px;
-      font-size: 10px;
-      font-weight: 900;
-      color: rgb(36, 17, 17);
-      white-space: nowrap;
-      animation: bounceUpDown 1s infinite;
-      z-index: 25;
-    }
-
-    /* 말풍선 꼬리 */
-    .char-bubble::after {
-      content: "";
-      position: absolute;
-      bottom: -7px;
-      left: 50%;
-      transform: translateX(-50%) rotate(45deg);
-      width: 7px;
-      height: 7px;
-      background: rgb(255, 232, 205);
-      border-right: 3px solid rgb(86, 63, 44);
-      border-bottom: 3px solid rgb(86, 63, 44);
-    }
+    /* 캐릭터 레벨 보상으로 지급되는 왕관(Crown) 파츠에 대한 렌더링 및 특수 반사 이펙트이다. */
+    .char-part-crown-wrapper { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); z-index: 4; width: 22px; height: 14px; pointer-events: none; overflow: hidden; display: flex; justify-content: center; align-items: flex-end; border-radius: 4px; }
+    .char-part-crown { width: 100%; height: auto; display: block; }
+    .char-part-crown-wrapper::after { content: ""; position: absolute; top: 0; left: -200%; width: 100%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0) 100%); transform: skewX(-20deg); animation: metallicShimmer 3.5s infinite; z-index: 5; }
+    @keyframes metallicShimmer { 0% { left: -200%; opacity: 0; } 15% { left: 200%; opacity: 1; } 100% { left: 200%; opacity: 0; } }
+    .char-part-crown-wrapper::before { content: "✦"; position: absolute; color: white; font-size: 8px; line-height: 1; text-shadow: 0 0 3px rgba(255, 255, 255, 0.9); animation: popSparkle 3s infinite linear; z-index: 6; pointer-events: none; opacity: 0; }
+    @keyframes popSparkle { 0% { top: -4px; left: 2px; transform: scale(0) rotate(0deg); opacity: 0; } 5% { top: -4px; left: 2px; transform: scale(1.2) rotate(15deg); opacity: 1; } 10% { top: -4px; left: 2px; transform: scale(1.8) rotate(30deg); opacity: 0; } 25% { top: 3px; left: 16px; transform: scale(0) rotate(0deg); opacity: 0; } 30% { top: 3px; left: 16px; transform: scale(1) rotate(15deg); opacity: 1; } 35% { top: 3px; left: 16px; transform: scale(1.6) rotate(30deg); opacity: 0; } 50% { top: -3px; left: 10px; transform: scale(0) rotate(0deg); opacity: 0; } 55% { top: -3px; left: 10px; transform: scale(1.3) rotate(15deg); opacity: 1; } 60% { top: -3px; left: 10px; transform: scale(1.9) rotate(30deg); opacity: 0; } 75% { top: 6px; left: -2px; transform: scale(0) rotate(0deg); opacity: 0; } 80% { top: 6px; left: -2px; transform: scale(0.9) rotate(15deg); opacity: 1; } 85% { top: 6px; left: -2px; transform: scale(1.4) rotate(30deg); opacity: 0; } 100% { opacity: 0; } }
+    .crown-silver { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.8)) grayscale(1) brightness(0.85) contrast(1.5); }
+    .crown-gold { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.8)) grayscale(1) sepia(1) hue-rotate(5deg) saturate(8) brightness(0.75) contrast(1.5); }
+    
+    /* 캐릭터 기본 몸통, 하의, 머리 파츠의 z-index 및 위치 지정이다. */
+    .char-part-base { z-index: 1; position: relative; }
+    .char-part-bottom { position: absolute; bottom: 5.5px; left: 50%; transform: translateX(-50%); z-index: 2; width: 65% !important; height: 30% !important; }
+    .char-part-head { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 3; width: 110%; }
+    img[src*="chrhair5"] { top: -6px; width: 110% }
+    img[src*="chrhair3"] { top: -1px; width: 105% }
+    
+    /* 개별 캐릭터 발밑에 렌더링되는 로컬 경험치 바이다. */
+    .char-xp-bar-container { width: 30px; height: 4px; background: rgba(0, 0, 0, 0.8); border: 1px solid #000; border-radius: 2px; overflow: hidden; margin-top: 4px; }
+    .char-xp-bar-fill { height: 100%; background: #a3e635; transition: width 0.3s ease; }
+    
+    /* 주기적으로 랜덤하게 띄워지는 로비 캐릭터 대사 말풍선이다. */
+    .char-bubble { position: absolute; top: -45px; background: rgb(255, 232, 205); border: 3px solid rgb(86, 63, 44); border-radius: 20px; padding: 8px 16px; font-size: 10px; font-weight: 900; color: rgb(36, 17, 17); white-space: nowrap; animation: bounceUpDown 1s infinite; z-index: 25; }
+    .char-bubble::after { content: ""; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 7px; height: 7px; background: rgb(255, 232, 205); border-right: 3px solid rgb(86, 63, 44); border-bottom: 3px solid rgb(86, 63, 44); }
 
     /* ==========================================================================
-       [4] 타이머 화면 레이아웃 및 컴팩트 HUD 스타일
+       [4] 타이머 화면 레이아웃
        ========================================================================== */
-    #timer-screen {
-      z-index: 30;
-      background: #F9E9C8;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* 타이머 닫기(X) 버튼 */
-    .round-close {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      z-index: 40;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 50%;
-      font-weight: 1000;
-      background: #F02C2C;
-      border: 2px solid #000000;
-      box-shadow: inset 0px 0px 2px 2px rgba(255, 255, 255, 0.384);
-      color: white;
-      text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-    }
-
-    #timer-main {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .timer-layout {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px 10px;
-      pointer-events: none;
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    /* 타이머 캐릭터 + 말풍선 컨테이너 */
-    .timer-top {
-      z-index: 10;
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      max-width: 600px;
-      margin-bottom: -5px;
-      pointer-events: auto;
-    }
-
-    #speech-bubble {
-      flex: 0 1 auto;
-      position: relative;
-      z-index: 15;
-      margin-bottom: 20px;
-    }
-
-    .bubble {
-      position: relative;
-      background: #F8EEDF;
-      border: 3px solid #000;
-      border-radius: 20px;
-      padding: 12px 16px;
-      font-size: 13px;
-      font-weight: 800;
-      text-align: center;
-      word-break: keep-all;
-      color: #000;
-      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
-    }
-
-    .bubble::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      right: -8px;
-      transform: translateY(-50%) rotate(45deg);
-      width: 14px;
-      height: 14px;
-      background: #F8EEDF;
-      border-top: 3px solid #000;
-      border-right: 3px solid #000;
-    }
-
-    /* 타이머 화면 캐릭터 래퍼 */
-    .timer-character {
-      width: 50px;
-      flex-shrink: 0;
-      position: relative;
-      z-index: 10;
-    }
-
-    .timer-character img {
-      width: 100%;
-      height: auto;
-      display: block;
-      user-select: none;
-      -webkit-user-drag: none;
-      pointer-events: none;
-    }
-
-    .timer-char-img-wrap {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* 타이머 화면 캐릭터 머리 위 HUD */
-    .timer-char-hud {
-      position: absolute;
-      bottom: 100%;
-      /* 캐릭터 머리 위에 배치하기 위한 속성 */
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100px;
-      margin-bottom: 4px;
-      z-index: 20;
-    }
-
-    .timer-char-hud-name {
-      color: #fff;
-      font-size: 11px;
-      font-weight: 900;
-      white-space: nowrap;
-      margin-bottom: 2px;
-      text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black;
-      /* 그림자 효과 */
-    }
-
-    .timer-char-hud-level {
-      color: #a3e635;
-      font-size: 10px;
-      font-weight: 900;
-      margin-bottom: 3px;
-      text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black;
-      /* 그림자 효과 */
-    }
-
-    .timer-char-hud-xpbar {
-      width: 40px;
-      height: 4px;
-      background: rgba(0, 0, 0, 0.8);
-      border: 1px solid #000;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .timer-char-hud-xpfill {
-      width: 0%;
-      height: 100%;
-      background: #3b82f6;
-      transition: width 0.3s;
-    }
-
-    /* 타이머 시간/버튼을 감싸는 박스 */
-    .timer-card {
-      z-index: 20;
-      width: 100%;
-      max-width: 600px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex-shrink: 0;
-      margin-top: 0;
-      padding: 12px;
-      pointer-events: auto;
-      background: #B37E6C;
-      border: 6px solid #000000;
-      box-shadow: inset 0px 5px 3px rgba(255, 211, 182, 0.288);
-      border-radius: 15px;
-    }
-
-    .timer-display-wrap {
-      position: relative;
-      min-height: 50px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      padding: 8px 0;
-      border: 3px solid #000;
-      border-radius: 8px;
-      background: #624236;
-    }
-
-    /* 00:00:00 표시 인풋 */
-    #timer-display {
-      z-index: 10;
-      width: 100%;
-      border: 0;
-      outline: 0;
-      background: transparent;
-      color: #ffffff;
-      text-align: center;
-      font-size: 40px;
-      font-weight: 900;
-      line-height: 1;
-      text-shadow: -3px 0 black, 0 3px black, 3px 0 black, 0 -3px black;
-    }
-
-    /* 타이머 버튼용 레이아웃 래퍼 */
-    .row {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    /* 타이머 제어 공통 버튼 스타일 */
-    .preset-btn,
-    #reset-timer-btn,
-    #start-timer-btn,
-    .plain-btn {
-      border: 2px solid #000000;
-      border-radius: 8px;
-      background: #e79a52;
-      color: #000;
-      font-weight: 900;
-      box-shadow: inset 0px -4px 0.5px -1px rgba(0, 0, 0, 0.308), inset 0px -5px 1px 2px rgba(255, 255, 255, 0.123);
-      transition: transform .1s, background .15s;
-      width: 30%;
-      font-size: 14px;
-    }
-
-    .preset-btn {
-      flex: 1;
-      padding: 8px 0;
-    }
-
-    .preset-btn:hover,
-    .plain-btn:hover {
-      background: #d86c2d;
-    }
-
-    .preset-btn:active,
-    #reset-timer-btn:active,
-    #start-timer-btn:active,
-    .plain-btn:active {
-      transform: scale(.95);
-    }
-
-    /* 클릭시 꾹 눌리는 효과 */
-
-    #reset-timer-btn {
-      background: #b3ff00;
-      padding: 12px 0;
-      font-size: 16px;
-      width: 25%;
-    }
-
-    #start-timer-btn {
-      background: #FFBB00;
-      padding: 12px 0;
-      font-size: 16px;
-      width: 35%;
-    }
-
-    #start-timer-btn:hover {
-      background: #ffe449;
-    }
-
-    /* 타이머 캐릭터 선택창 모달 오버레이 */
-    .timer-char-select-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-      padding: 16px;
-    }
-
-    .timer-char-select-box {
-      width: 100%;
-      max-width: 500px;
-      background: #F8EFE6;
-      border: 4px solid #000;
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      max-height: 90%;
-    }
-
-    .timer-char-select-title {
-      margin: 0;
-      text-align: center;
-      font-size: 18px;
-      font-weight: 900;
-      color: #000;
-    }
-
-    /* 선택창 캐릭터 목록 그리드 */
-    .timer-char-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 12px;
-      overflow-y: auto;
-      padding: 4px 4px 24px 4px;
-    }
-
-    .timer-char-card {
-      background: #fff;
-      border: 3px solid #000;
-      border-radius: 8px;
-      padding: 12px 12px 20px 12px;
-      margin-bottom: 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-
-    .timer-char-card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .timer-char-card:active {
-      transform: scale(0.95);
-    }
-
-    .timer-char-card .card-name {
-      font-size: 14px;
-      font-weight: 900;
-      margin-bottom: 4px;
-      color: #000;
-      text-align: center;
-    }
-
-    .timer-char-card .card-level {
-      font-size: 12px;
-      color: #374151;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    /* 타이머 결과창(보상 지급 팝업) 오버레이 */
-    #timer-result-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 60;
-      padding: 16px;
-    }
-
-    .timer-result-box {
-      width: 100%;
-      max-width: 320px;
-      background: #fff;
-      border: 4px solid #000;
-      border-radius: 12px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.6);
-      text-align: center;
-    }
-
-    .timer-result-char-name {
-      font-size: 18px;
-      font-weight: 900;
-      color: #000;
-    }
-
-    .timer-result-xp-badge {
-      background: #FFBB00;
-      color: #000;
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 3px solid #000;
-      font-size: 18px;
-      font-weight: 900;
-      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3), 0 4px 0 #000;
-    }
-
-    .timer-result-lv {
-      font-size: 14px;
-      font-weight: 800;
-      color: #2563eb;
-    }
-
-    .timer-result-msg {
-      font-size: 14px;
-      font-weight: 800;
-      color: #374151;
-      margin: 0;
-    }
-
-    .timer-result-btns {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-      margin-top: 8px;
-    }
-
-    .timer-result-btn {
-      flex: 1;
-      padding: 10px 0;
-      border: 3px solid #000;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 900;
-      box-shadow: 0 4px 0 #000;
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-
-    .timer-result-btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 0 0 #000;
-    }
-
-    .timer-result-btn.memo {
-      background: #3b82f6;
-      color: #fff;
-    }
-
-    .timer-result-btn.skip {
-      background: #e5e7eb;
-      color: #000;
-    }
+    /* 학습 시간을 측정하는 타이머 기능 화면이다. */
+    #timer-screen { z-index: 30; background: #F9E9C8; display: flex; flex-direction: column; }
+    
+    /* 타이머 화면 우측 상단의 닫기(X) 버튼이다. */
+    .round-close { position: absolute; top: 8px; left: 8px; z-index: 40; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; border-radius: 50%; font-weight: 1000; background: #F02C2C; border: 2px solid #000000; box-shadow: inset 0px 0px 2px 2px rgba(255, 255, 255, 0.384); color: white; text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black; }
+    #timer-main { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .timer-layout { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px 10px; pointer-events: none; overflow-y: auto; overflow-x: hidden; }
+    
+    /* 타이머 상단의 말풍선과 선택된 캐릭터 이미지가 배치되는 영역이다. */
+    .timer-top { z-index: 10; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 10px; width: 100%; max-width: 600px; margin-bottom: -5px; pointer-events: auto; }
+    #speech-bubble { flex: 0 1 auto; position: relative; z-index: 15; margin-bottom: 20px; }
+    .bubble { position: relative; background: #F8EEDF; border: 3px solid #000; border-radius: 20px; padding: 12px 16px; font-size: 13px; font-weight: 800; text-align: center; word-break: keep-all; color: #000; box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1); }
+    .bubble::after { content: ""; position: absolute; top: 50%; right: -8px; transform: translateY(-50%) rotate(45deg); width: 14px; height: 14px; background: #F8EEDF; border-top: 3px solid #000; border-right: 3px solid #000; }
+    
+    /* 타이머 화면에 렌더링될 캐릭터 아바타 크기 지정이다. */
+    .timer-character { width: 50px; flex-shrink: 0; position: relative; z-index: 10; }
+    .timer-character img { width: 100%; height: auto; display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+    .timer-char-img-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
+    
+    /* 타이머 화면 캐릭터 머리 위에 표기되는 전용 상태(이름, 레벨, 경험치 바) HUD이다. */
+    .timer-char-hud { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 100px; margin-bottom: 4px; z-index: 20; }
+    .timer-char-hud-name { color: #fff; font-size: 11px; font-weight: 900; white-space: nowrap; margin-bottom: 2px; text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black; }
+    .timer-char-hud-level { color: #a3e635; font-size: 10px; font-weight: 900; margin-bottom: 3px; text-shadow: -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black, 1px 1px 2px black; }
+    .timer-char-hud-xpbar { width: 40px; height: 4px; background: rgba(0, 0, 0, 0.8); border: 1px solid #000; border-radius: 2px; overflow: hidden; }
+    .timer-char-hud-xpfill { width: 0%; height: 100%; background: #3b82f6; transition: width 0.3s; }
+    
+    /* 타이머의 디지털 숫자와 컨트롤 버튼이 묶인 UI 카드이다. */
+    .timer-card { z-index: 20; width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; margin-top: 0; padding: 12px; pointer-events: auto; background: #B37E6C; border: 6px solid #000000; box-shadow: inset 0px 5px 3px rgba(255, 211, 182, 0.288); border-radius: 15px; }
+    .timer-display-wrap { position: relative; min-height: 50px; display: flex; justify-content: center; align-items: center; overflow: hidden; padding: 8px 0; border: 3px solid #000; border-radius: 8px; background: #624236; }
+    
+    /* 남은 시간을 표기하는 디지털 인풋이다. 키보드 입력을 통해 수동 조작이 가능하다. */
+    #timer-display { z-index: 10; width: 100%; border: 0; outline: 0; background: transparent; color: #ffffff; text-align: center; font-size: 40px; font-weight: 900; line-height: 1; text-shadow: -3px 0 black, 0 3px black, 3px 0 black, 0 -3px black; }
+    .row { display: flex; gap: 8px; justify-content: center; }
+    
+    /* 시간 추가(+1h, +30m, +5s) 등 프리셋 조작 버튼이다. */
+    .preset-btn, #reset-timer-btn, #start-timer-btn, .plain-btn { border: 2px solid #000000; border-radius: 8px; background: #e79a52; color: #000; font-weight: 900; box-shadow: inset 0px -4px 0.5px -1px rgba(0, 0, 0, 0.308), inset 0px -5px 1px 2px rgba(255, 255, 255, 0.123); transition: transform .1s, background .15s; width: 30%; font-size: 14px; }
+    .preset-btn { flex: 1; padding: 8px 0; }
+    .preset-btn:hover, .plain-btn:hover { background: #d86c2d; }
+    .preset-btn:active, #reset-timer-btn:active, #start-timer-btn:active, .plain-btn:active { transform: scale(.95); }
+    #reset-timer-btn { background: #b3ff00; padding: 12px 0; font-size: 16px; width: 25%; }
+    #start-timer-btn { background: #FFBB00; padding: 12px 0; font-size: 16px; width: 35%; }
+    #start-timer-btn:hover { background: #ffe449; }
+    
+    /* 동반 학습할 캐릭터를 고르는 모달(레이어) 영역이다. */
+    .timer-char-select-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 50; padding: 16px; }
+    .timer-char-select-box { width: 100%; max-width: 500px; background: #F8EFE6; border: 4px solid #000; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; max-height: 90%; }
+    .timer-char-select-title { margin: 0; text-align: center; font-size: 18px; font-weight: 900; color: #000; }
+    
+    /* 선택 가능한 캐릭터 카드가 담기는 그리드 레이아웃이다. */
+    .timer-char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; overflow-y: auto; padding: 4px 4px 24px 4px; }
+    .timer-char-card { background: #fff; border: 3px solid #000; border-radius: 8px; padding: 12px 12px 20px 12px; margin-bottom: 4px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; outline: none; }
+    .timer-char-card:hover, .timer-char-card:focus-visible { transform: scale(1.05); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); }
+    .timer-char-card:active { transform: scale(0.95); }
+    .timer-char-card .card-name { font-size: 14px; font-weight: 900; margin-bottom: 4px; color: #000; text-align: center; }
+    .timer-char-card .card-level { font-size: 12px; color: #374151; font-weight: 800; margin-bottom: 8px; }
+    
+    /* 타이머 종료 시 보상 경험치를 알리는 결과 오버레이 화면이다. */
+    #timer-result-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 60; padding: 16px; }
+    .timer-result-box { width: 100%; max-width: 320px; background: #fff; border: 4px solid #000; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.6); text-align: center; }
+    .timer-result-char-name { font-size: 18px; font-weight: 900; color: #000; }
+    .timer-result-xp-badge { background: #FFBB00; color: #000; padding: 8px 16px; border-radius: 20px; border: 3px solid #000; font-size: 18px; font-weight: 900; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3), 0 4px 0 #000; }
+    .timer-result-lv { font-size: 14px; font-weight: 800; color: #2563eb; }
+    .timer-result-msg { font-size: 14px; font-weight: 800; color: #374151; margin: 0; }
+    .timer-result-btns { display: flex; gap: 10px; width: 100%; margin-top: 8px; }
+    .timer-result-btn { flex: 1; padding: 10px 0; border: 3px solid #000; border-radius: 8px; font-size: 14px; font-weight: 900; box-shadow: 0 4px 0 #000; transition: transform 0.1s, box-shadow 0.1s; }
+    .timer-result-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #000; }
+    .timer-result-btn.memo { background: #3b82f6; color: #fff; }
+    .timer-result-btn.skip { background: #e5e7eb; color: #000; }
 
     /* ==========================================================================
-       [5] 커스텀 모달 & 알림 대화상자 (Dialog)
+       [5] 모달 & 다이얼로그 (Dialog)
        ========================================================================== */
-    /* 모달의 배경 처리 (화면을 덮는 흐릿한 오버레이) */
-    #modal-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-      z-index: 999;
-      background: rgba(20, 22, 14, 0.733);
-    }
-
-    #dialog-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-      z-index: 1000;
-      background: rgba(0, 0, 0, 0.5);
-    }
-
-    /* 컨텐츠 팝업 공통 박스 스타일 */
-    .modal-content {
-      position: relative;
-      width: 100%;
-      max-width: 95%;
-      height: 90%;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 16px;
-      border: 4px solid #000;
-      border-radius: 12px;
-      background: #F8EFE6;
-      box-shadow: inset 0px 0px 8.9px 14px rgba(154, 91, 20, 0.11), inset 0px 0px 3px 8px #FFFFFF;
-    }
-
-    /* 알림창 등 작은 팝업용 클래스 */
-    .modal-mini {
-      height: auto !important;
-      max-width: 320px !important;
-      padding: 24px !important;
-      box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.6) !important;
-    }
-
-    /* 팝업 모서리의 X 버튼 */
-    .close-modal-btn {
-      position: absolute;
-      top: -12px;
-      left: -12px;
-      z-index: 50;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 50%;
-      background: #F02C2C;
-      border: 2px solid #000000;
-      box-shadow: inset 0px 0px 2px 2px rgba(255, 255, 255, 0.384);
-      color: white;
-      font-weight: 1000;
-      text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-    }
-
-    /* 입력 필드 (input, textarea 등) 공통 테마 */
-    .field,
-    .area,
-    .fake-field {
-      width: 100%;
-      border: 3px solid #9A8978;
-      color: #000;
-      font-size: 14px;
-      font-weight: 800;
-      outline: 0;
-      background: #F0E3D3;
-      box-shadow: inset 0px -3px 2px 2px rgba(255, 255, 255, 0.4), inset 0px 3px 2px 1px rgba(78, 18, 18, 0.363);
-    }
-
-    .field,
-    .fake-field {
-      min-height: 42px;
-      border-radius: 999px;
-      padding: 8px 16px;
-    }
-
-    .area,
-    #solve-quiz-content {
-      flex: 1;
-      resize: none;
-      border-radius: 12px;
-      padding: 12px 16px;
-      overflow-y: auto;
-    }
-
-    /* 모달 내부 확인/제출 기능 버튼 */
-    .submit-btn {
-      align-self: center;
-      padding: 12px 40px;
-      font-size: 16px;
-      font-weight: 900;
-      background: #E45154;
-      color: white;
-      border: 3px solid #000000;
-      box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-    }
-
-    #btn-submit-notepad {
-      background: #59A3F8;
-    }
-
-    /* 정답 제출 후 결과 피드백 상자 */
-    #solve-result-state {
-      width: 100%;
-      min-height: 96px;
-      height: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      overflow-y: auto;
-      padding: 16px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 800;
-      line-height: 1.5;
-      word-break: break-all;
-    }
-
-    .result-good {
-      border: 2.5px solid #22c55e;
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    .result-bad {
-      flex-direction: column;
-      border: 2.5px solid #ef4444;
-      background: #fee2e2;
-      color: #b91c1c;
-    }
+    /* 컴포넌트 전체를 덮는 커스텀 모달 및 대화상자용 배경 마스크(오버레이)이다. */
+    #modal-overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; padding: 16px; z-index: 999; background: rgba(20, 22, 14, 0.733); }
+    #dialog-overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; padding: 16px; z-index: 1000; background: rgba(0, 0, 0, 0.5); }
+    
+    /* 모달 윈도우의 공통 외형(크기, 테두리, 배경, 그림자)을 정의한다. */
+    .modal-content { position: relative; width: 100%; max-width: 95%; height: 90%; display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 4px solid #000; border-radius: 12px; background: #F8EFE6; box-shadow: inset 0px 0px 8.9px 14px rgba(154, 91, 20, 0.11), inset 0px 0px 3px 8px #FFFFFF; }
+    
+    /* 프롬프트/경고 등 소형 대화상자에 사용되는 한정적 크기 지정이다. */
+    .modal-mini { height: auto !important; max-width: 320px !important; padding: 24px !important; box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.6) !important; }
+    
+    /* 우측 상단 모달 닫기 버튼이다. */
+    .close-modal-btn { position: absolute; top: -12px; left: -12px; z-index: 50; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; border-radius: 50%; background: #F02C2C; border: 2px solid #000000; box-shadow: inset 0px 0px 2px 2px rgba(255, 255, 255, 0.384); color: white; font-weight: 1000; text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black; }
+    
+    /* 입력 필드 (인풋, 텍스트에어리어 등) 공통 쉐이핑 속성이다. */
+    .field, .area, .fake-field { width: 100%; border: 3px solid #9A8978; color: #000; font-size: 14px; font-weight: 800; outline: 0; background: #F0E3D3; box-shadow: inset 0px -3px 2px 2px rgba(255, 255, 255, 0.4), inset 0px 3px 2px 1px rgba(78, 18, 18, 0.363); }
+    .field, .fake-field { min-height: 42px; border-radius: 999px; padding: 8px 16px; }
+    .area, #solve-quiz-content { flex: 1; resize: none; border-radius: 12px; padding: 12px 16px; overflow-y: auto; }
+    
+    /* 모달 내부 제출용 버튼의 외형이다. */
+    .submit-btn { align-self: center; padding: 12px 40px; font-size: 16px; font-weight: 900; background: #E45154; color: white; border: 3px solid #000000; box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2); border-radius: 10px; }
+    #btn-submit-notepad { background: #59A3F8; }
+    
+    /* 퀴즈 문제 채점 결과(정답/오답)를 렌더링하는 구역이다. */
+    #solve-result-state { width: 100%; min-height: 96px; height: auto; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto; padding: 16px; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 800; line-height: 1.5; word-break: break-all; }
+    .result-good { border: 2.5px solid #22c55e; background: #dcfce7; color: #15803d; }
+    .result-bad { flex-direction: column; border: 2.5px solid #ef4444; background: #fee2e2; color: #b91c1c; }
 
     /* ==========================================================================
        [6] 캐릭터(슬롯) 관리 모달 UI
        ========================================================================== */
-    #union-level-display {
-      margin: 0;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #000;
-      text-align: center;
-      font-size: 20px;
-      font-weight: 900;
-    }
+    /* 계정 내 전 캐릭터 레벨 합산 수치를 표시하는 텍스트이다. */
+    #union-level-display { margin: 0; padding-bottom: 8px; border-bottom: 2px solid #000; text-align: center; font-size: 20px; font-weight: 900; }
 
-    /* 캐릭터 목록 렌더링 컨테이너 */
-    #slot-manager-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-      padding: 0 4px 16px;
-    }
+    /* 캐릭터 목록 렌더링 컨테이너 - 3열 그리드 레이아웃 구조를 통해 뷰를 구성한다. */
+    #slot-manager-container { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; overflow-y: auto; padding: 4px 4px 16px; align-content: start; width: 100%; margin: auto; }
 
-    /* 개별 슬롯 카드 */
-    .slot-card {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px;
-      border: 3px solid #000;
-      border-radius: 8px;
-      background: #f9fafb;
-    }
+    /* 개별 캐릭터 슬롯 카드 UI. 세로 방향으로 내부 요소들을 배치한다. */
+    .slot-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 8px; border: 3px solid #000; border-radius: 8px; background: #f9fafb; box-shadow: 0 2px 4px rgba(0,0,0,0.15); min-width: 0; outline: none; }
 
-    .slot-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      font-weight: 900;
-    }
+    /* 캐릭터의 이름과 레벨이 담기는 헤더 영역이다. */
+    .slot-head { display: flex; flex-direction: column; align-items: center; font-size: 13px; font-weight: 900; text-align: center; width: 100%; gap: 1px; }
 
-    /* 레벨업 뱃지 아이콘 */
-    .badge {
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #3b82f6;
-      color: #fff;
-      font-size: 12px;
-    }
+    /* 캐릭터 졸업/만렙 배지의 공통 및 골드 테마 속성이다. */
+    .badge { padding: 2px 8px; border-radius: 999px; background: #3b82f6; color: #fff; font-size: 12px; }
+    .badge.gold { background: #facc15; color: #000; }
+    
+    /* 삭제, 위험성 동작 등에 매핑되는 붉은색 버튼이다. */
+    .danger-btn { flex-shrink: 0; padding: 12px 16px; border: 3px solid #000; border-radius: 8px; background: #ef4444; color: #fff; font-size: 16px; font-weight: 900; box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2); }
 
-    .badge.gold {
-      background: #facc15;
-      color: #000;
-    }
+    /* 슬롯 내부의 캐릭터 아바타 이미지를 감싸는 제한 컨테이너이다. */
+    .slot-char-img { width: 70px !important; flex-shrink: 0; position: relative; margin: 4px auto; }
 
-    /* 모달 내부 경고(데이터 삭제 등) 버튼 */
-    .danger-btn {
-      flex-shrink: 0;
-      padding: 12px 16px;
-      border: 3px solid #000;
-      border-radius: 8px;
-      background: #ef4444;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 900;
-      box-shadow: inset 0px -5px 0.5px -1px rgba(0, 0, 0, 0.4), inset 0px -4px 2px 4px rgba(255, 255, 255, 0.2);
-    }
+    /* 외형 무작위 재생성(랜덤화)을 호출하는 주사위 폼 버튼 속성이다. */
+    .slot-dice-btn { position: absolute; top: -2px; right: -2px; z-index: 5; width: 32px; height: 32px; padding: 4px; border: 2px solid #333; border-radius: 8px; background: #e2e8f0; box-shadow: 0 3px 0 #999, inset 0 1px 0 rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: box-shadow 0.08s, transform 0.08s; }
+    .slot-dice-btn:hover { background: #d1d9e6; }
+    .slot-dice-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #999, inset 0 1px 0 rgba(255,255,255,0.6); }
+
+    /* 캐릭터 이름 변경 및 삭제 제어 버튼 묶음 컨테이너이다. */
+    .slot-card-btns { display: flex; flex-direction: column; gap: 5px; width: 100%; margin-top: 4px; }
+    .slot-rename-btn { width: 100%; padding: 6px 4px; font-size: 11px; font-weight: 800; border-radius: 6px; border: 2px solid #000; background: #f97316; color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); cursor: pointer; }
+    .slot-rename-btn:hover { background: #fb923c; }
+    .slot-delete-btn { width: 100%; padding: 6px 4px; font-size: 11px; font-weight: 800; border-radius: 6px; border: 2px solid #000; background: #ef4444; color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); cursor: pointer; }
+    .slot-delete-btn:hover { background: #f87171; }
 
     /* ==========================================================================
-       [7] 우측 패널 및 일일 퀘스트 / 하위 퀘스트 (폴더) UI
+       [7] 우측 패널 및 일일 퀘스트 UI
        ========================================================================== */
-    /* 모바일에서 우측 패널 껐다 켰다 하는 토글 햄버거 버튼 */
-    #mobile-toggle-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 40;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 23px;
-      font-weight: 1000;
-      color: #000;
-      border: none;
-      background: none;
-    }
+    /* 모바일 환경에서 패널을 열고 닫는 토글(햄버거) 버튼이다. */
+    #mobile-toggle-btn { position: absolute; top: 12px; right: 12px; z-index: 40; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; font-size: 23px; font-weight: 1000; color: #000; border: none; background: none; }
+    
+    /* 우측의 일일/퀴즈 퀘스트 뷰 컨테이너이다. */
+    .panel-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* 패널 상단 제목 텍스트 (일일퀘스트 등) */
+    .panel-title { margin: 0; padding-top: 12px; padding-bottom: 8px; color: #000; text-align: center; font-size: 20px; font-weight: 900; letter-spacing: .12em; }
+    
+    /* 퀘스트/퀴즈 아이템 목록 영역. 내부에 스크롤 뷰를 허용한다. */
+    .list { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding: 0 8px 64px; }
+    
+    /* 순서 편집(드래그) 기능을 알리기 위한 시각적 커서 지시자이다. */
+    .draggable-todo-item { cursor: grab; user-select: none; }
+    .draggable-todo-item:active { cursor: grabbing; }
+    
+    /* 투두 항목, 생성된 퀴즈 블록 공통 UI 기저 카드 형태이다. */
+    .todo-card, .quiz-card, .storage-card { flex-shrink: 0; padding: 8px; border: 3px solid black; border-radius: 5px; box-shadow: 0 2px 1px 3px rgba(44, 9, 9, 0.15), inset 0 0.3px 1px 2px rgba(133, 98, 76, 0.68), inset 0 3dvb 1px 1px rgba(27, 23, 23, 0.1); outline: none; }
+    
+    /* 기본 일일 퀘스트 항목(할일) 카드이다. */
+    .todo-card { min-height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 6px; border: 2.5px solid #000; background: #725949; }
+    
+    /* 이미 완수된(clear) 상태의 카드는 비활성화된 어두운 색상으로 렌더링한다. */
+    .todo-card.clear { background: #241a13; box-shadow: 0 2px 1px 3px rgba(44, 9, 9, 0.15), inset 0 0.3px 1px 2px rgba(133, 98, 76, 0.344), inset 0 3dvb 1px 1px rgba(27, 23, 23, 0.1); cursor: default; }
+    .todo-card input, .quiz-card input { width: 100%; border: 0; outline: 0; background: transparent; color: #000; font-size: 12px; font-weight: 800; }
+    
+    /* 더블 클릭 편집 여부에 따른 인풋(input) 텍스트 커서 상태 관리이다. */
+    .inline-todo-input[readonly] { pointer-events: none; user-select: none; -webkit-user-select: none; }
+    .inline-todo-input:not([readonly]) { pointer-events: auto; cursor: text; user-select: text; -webkit-user-select: text; }
+    
+    /* 완료 항목의 텍스트 투명도 조절이다. */
+    .todo-card.clear input { color: rgba(255, 255, 255, 0.7); text-decoration: none !important; }
+    .todo-card input::placeholder { color: rgba(255, 255, 255, 0.6); font-weight: normal; }
+    
+    /* 드래그 기호(핸들) 설정. 마우스 포인터 이벤트를 무시한다. */
+    .drag-handle { margin-right: 8px; color: #000000d5; font-size: 30px; font-weight: 900; line-height: 1; pointer-events: none; flex-shrink: 0; }
+    
+    /* 하위 목표(Subtask)를 추가하는 버튼이다. */
+    .folder-add-btn { background: #4caf50; color: white; border: 2px solid #000; border-radius: 4px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; margin-right: 6px; cursor: pointer; flex-shrink: 0; font-size: 16px; padding: 0; line-height: 1; }
+    .folder-add-btn:active { transform: scale(0.9); }
+    
+    /* 하위 목표 목록이 담기는 들여쓰기 래퍼이다. */
+    .subtasks-container { display: flex; flex-direction: column; gap: 4px; padding-left: 24px; margin-top: 2px; }
+    .subtask-card { min-height: 36px !important; padding: 4px 6px !important; background: #8a705e !important; border: 2px solid #000 !important; }
+    .subtask-card input { font-size: 11px !important; }
+    
+    /* 항목 우측에 배치되는 인터랙션 미니 버튼 모음이다. */
+    .mini-btn, .quiz-card button { flex-shrink: 0; position: relative; overflow: hidden; padding: 0.8dvh 1dvh; border: 2px solid black; border-radius: 10px; font-size: 1.1rem; font-weight: 700; color: white; line-height: 1; text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black; white-space: nowrap; }
+    .mini-btn::before { content: ""; position: absolute; left: 4px; right: 20px; top: 2px; width: 7px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.304); pointer-events: none; }
+    
+    /* 개별 버튼의 용도(삭제, 풀기, 성공)별 색상 매핑 속성이다. */
+    #Pdel { background: #31447c; } #Bstorage { background: #2eabe0; }
+    #del { background: #c10707; box-shadow: inset 0 -1.5px 1px 1px rgba(0, 0, 0, 0.4), inset 0 0 1px 3px rgba(255, 129, 129, 0.323); }
+    #suc { background: #FFBB00; box-shadow: inset 0 -1.5px 1px 1px rgba(0, 0, 0, 0.4), inset 0 0 1px 3px rgba(255, 200, 129, 0.45); }
+    #Pdel:hover { background: #4169a9; } #Bstorage:hover { background: #26c5f5; } #del:hover { background: #dd0707; } #suc:hover { background: #ffe656; }
+    
+    /* 생성된 퀴즈가 저장소에 보일 때 적용되는 특수 레이아웃 및 테마이다. */
+    .quiz-card { position: relative; min-height: 44px; display: flex; flex-direction: column; padding: 6px; border: 2.5px solid #770b38; background: #ff5590; box-shadow: 0px 2px 1px 3px rgba(0, 0, 0, 0.25), inset 0px 0.3px 1px 2px rgba(10, 52, 8, 0.127); }
+    .quiz-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    .quiz-label { color: #a0052e; font-size: 12px; font-weight: 900; }
+    .quiz-card button { position: absolute; background: #ff89b7; width: auto; height: 40px; right: 5px; top: 6px; box-shadow: inset 0 -1.5px 1px 1px rgba(215, 10, 103, 0.4), inset 0 0 1px 3px rgba(255, 156, 156, 0.323); }
+    
+    .storage-card { position: relative; min-height: 60px; display: flex; flex-direction: column; gap: 8px; padding: 8px; cursor: pointer; border: 3px solid #000000; background: #4e7ca1; box-shadow: 0px 2px 1px 3px rgba(0, 0, 0, 0.25), inset 0px 0.3px 1px 3px rgba(255, 255, 255, 0.111); }
+    .storage-card:hover { background: #5589bd; }
+    .storage-title { overflow: hidden; padding-right: 24px; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; color: white; text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black; }
+    .storage-bottom { display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; background: #84e0ff13; border-radius: 10px; }
+    .storage-tag { padding: 2px 8px; border-radius: 999px; background: #3d6f98; font-size: 9px; box-shadow: inset 0px 1px 1px 1.8px rgba(0, 0, 0, 0.159); }
+    .storage-actions { display: flex; gap: 4px; }
+    
+    /* 일일 퀘스트 목록의 하단에 상시 배치되는 [+] 항목 추가 버튼이다. */
+    .add-card { min-height: 44px; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: 1000; line-height: 1; flex-shrink: 0; padding: 8px; border: 3px solid rgba(0, 0, 0, 0.368); border-radius: 5px; background: rgba(0, 0, 0, 0.216); color: rgba(0, 0, 0, 0.4); cursor: pointer; outline: none;}
+    
+    /* 화면 우하단에 플로팅 상태로 배치되어 집중 타이머 화면 진입을 유도하는 버튼이다. */
+    #open-timer-btn { position: absolute; right: 12px; bottom: 48px; z-index: 10; width: 40px; height: 100px; min-width: 40px; min-height: 40px; display: flex; justify-content: center; align-items: center; background: transparent !important; animation: bounceUpDown 1.2s ease-in-out infinite; cursor: pointer; border: none; outline: none; }
+    
+    /* 화면 맨 아래에 위치하여 탭 전환을 수행하는 내비게이션 바이다. */
+    #bottom-tab-bar { width: 100%; height: 40px; min-height: 40px; display: flex; flex-shrink: 0; margin-top: auto; border-top: 3px solid #000; background: #1B1613; box-shadow: inset 0px 1px 1px 3px rgba(42, 37, 34, 0.5); }
+    .tab { flex: 1; display: flex; justify-content: center; align-items: center; color: #6b7280; font-size: 2vh; font-weight: 800; cursor: pointer; outline: none; }
+    .tab.active { position: relative; border-right: 3px solid #000; color: #ffffff; background: #B46236; box-shadow: inset 0px 1px 1px 3px rgba(81, 66, 58, 0.5); border-radius: 10px; }
+    #tab-storage.active { border-right: 0; border-left: 3px solid #000; background: #3668B4; }
+    #tab-quest.active .tab-ui-highlight, #tab-storage.active .tab-ui-highlight { position: absolute; left: 8px; right: 8px; bottom: 6px; height: 30px; border-radius: 999px; background: rgba(255, 174, 174, 0.105); pointer-events: none; opacity: 1; }
+    
+    /* 캐릭터가 경험치를 획득할 때 텍스트가 떠오르는 시각적 플로팅 효과이다. */
+    @keyframes xpFloatUp { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 20% { opacity: 1; transform: translate(-50%, -90%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -220%) scale(1); } }
+    
+    /* 메모 내용 목록 렌더링 영역이며, 클릭 시 숨겨진 텍스트를 펼칠 수 있도록 설계하였다. */
+    .memo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background 0.2s; padding: 2px; border-radius: 4px; line-height: 1.4; color: #000; }
+    .memo-text:hover { background: rgba(0, 0, 0, 0.05); }
+    .memo-text.expanded { white-space: pre-wrap; word-break: break-all; }
 
-    /* 패널 공통 영역 (일일퀘스트, 퀴즈퀘스트) */
-    .panel-view {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* 타이틀 텍스트 디자인 */
-    .panel-title {
-      margin: 0;
-      padding-top: 12px;
-      padding-bottom: 8px;
-      color: #000;
-      text-align: center;
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: .12em;
-    }
-
-    /* 퀘스트/퀴즈 리스트 스크롤 영역 */
-    .list {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-      padding: 0 8px 64px;
-    }
-
-    /* 드래그 가능 아이템 */
-    .draggable-todo-item {
-      cursor: grab;
-      user-select: none;
-    }
-
-    .draggable-todo-item:active {
-      cursor: grabbing;
-    }
-
-    /* 리스트 내부 공통 카드 뷰 스타일 */
-    .todo-card,
-    .quiz-card,
-    .storage-card {
-      flex-shrink: 0;
-      padding: 8px;
-      border: 3px solid black;
-      border-radius: 5px;
-      box-shadow: 0 2px 1px 3px rgba(44, 9, 9, 0.15), inset 0 0.3px 1px 2px rgba(133, 98, 76, 0.68), inset 0 3dvb 1px 1px rgba(27, 23, 23, 0.1);
-    }
-
-    /* 할일 전용 카드 (갈색) */
-    .todo-card {
-      min-height: 44px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px;
-      border: 2.5px solid #000;
-      background: #725949;
-    }
-
-    /* 성공/완료 상태의 어두운 카드 배경 */
-    .todo-card.clear {
-      background: #241a13;
-      box-shadow: 0 2px 1px 3px rgba(44, 9, 9, 0.15), inset 0 0.3px 1px 2px rgba(133, 98, 76, 0.344), inset 0 3dvb 1px 1px rgba(27, 23, 23, 0.1);
-      cursor: default;
-    }
-
-    /* 텍스트 입력창 투명 처리 */
-    .todo-card input,
-    .quiz-card input {
-      width: 100%;
-      border: 0;
-      outline: 0;
-      background: transparent;
-      color: #000;
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    /* 수정 가능한 텍스트 입력창 상태 변경 시 제어 */
-    .inline-todo-input[readonly] {
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .inline-todo-input:not([readonly]) {
-      pointer-events: auto;
-      cursor: text;
-      user-select: text;
-      -webkit-user-select: text;
-    }
-
-    /* 완료(클리어) 카드 안 텍스트 스타일: 희미하게 (취소선 제외) */
-    .todo-card.clear input {
-      color: rgba(255, 255, 255, 0.7);
-      text-decoration: none !important;
-    }
-
-    .todo-card input::placeholder {
-      color: rgba(255, 255, 255, 0.6);
-      font-weight: normal;
-    }
-
-    /* 드래그 핸들 기호 (≡) */
-    .drag-handle {
-      margin-right: 8px;
-      color: #000000d5;
-      font-size: 30px;
-      font-weight: 900;
-      line-height: 1;
-      pointer-events: none;
-      flex-shrink: 0;
-    }
-
-    /* 하위 폴더 생성용 + 초록색 버튼 */
-    .folder-add-btn {
-      background: #4caf50;
-      color: white;
-      border: 2px solid #000;
-      border-radius: 4px;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      margin-right: 6px;
-      cursor: pointer;
-      flex-shrink: 0;
-      font-size: 16px;
-      padding: 0;
-      line-height: 1;
-    }
-
-    .folder-add-btn:active {
-      transform: scale(0.9);
-    }
-
-    /* 하위 퀘스트 계층 컨테이너 (여백 띄우기) */
-    .subtasks-container {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding-left: 24px;
-      margin-top: 2px;
-    }
-
-    .subtask-card {
-      min-height: 36px !important;
-      padding: 4px 6px !important;
-      background: #8a705e !important;
-      border: 2px solid #000 !important;
-    }
-
-    .subtask-card input {
-      font-size: 11px !important;
-    }
-
-    /* 카드 내부에 배치되는 미니 상호작용 버튼들 */
-    .mini-btn,
-    .quiz-card button {
-      flex-shrink: 0;
-      position: relative;
-      overflow: hidden;
-      padding: 0.8dvh 1dvh;
-      border: 2px solid black;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: white;
-      line-height: 1;
-      text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-      white-space: nowrap;
-    }
-
-    /* 버튼 내부 하이라이트/빛 반사 이펙트 */
-    .mini-btn::before {
-      content: "";
-      position: absolute;
-      left: 4px;
-      right: 20px;
-      top: 2px;
-      width: 7px;
-      height: 5px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.304);
-      pointer-events: none;
-    }
-
-    /* 기능별 버튼 색상 */
-    #Pdel {
-      background: #31447c;
-    }
-
-    #Bstorage {
-      background: #2eabe0;
-    }
-
-    #del {
-      background: #c10707;
-      box-shadow: inset 0 -1.5px 1px 1px rgba(0, 0, 0, 0.4), inset 0 0 1px 3px rgba(255, 129, 129, 0.323);
-    }
-
-    #suc {
-      background: #FFBB00;
-      box-shadow: inset 0 -1.5px 1px 1px rgba(0, 0, 0, 0.4), inset 0 0 1px 3px rgba(255, 200, 129, 0.45);
-    }
-
-    #Pdel:hover {
-      background: #4169a9;
-    }
-
-    #Bstorage:hover {
-      background: #26c5f5;
-    }
-
-    #del:hover {
-      background: #dd0707;
-    }
-
-    #suc:hover {
-      background: #ffe656;
-    }
-
-    /* 퀴즈 문제 전용 테마 스타일 (핑크색) */
-    .quiz-card {
-      position: relative;
-      min-height: 44px;
-      display: flex;
-      flex-direction: column;
-      padding: 6px;
-      border: 2.5px solid #770b38;
-      background: #ff5590;
-      box-shadow: 0px 2px 1px 3px rgba(0, 0, 0, 0.25), inset 0px 0.3px 1px 2px rgba(10, 52, 8, 0.127);
-    }
-
-    .quiz-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-
-    .quiz-label {
-      color: #a0052e;
-      font-size: 12px;
-      font-weight: 900;
-    }
-
-    .quiz-card button {
-      position: absolute;
-      background: #ff89b7;
-      width: auto;
-      height: 40px;
-      right: 5px;
-      top: 6px;
-      box-shadow: inset 0 -1.5px 1px 1px rgba(215, 10, 103, 0.4), inset 0 0 1px 3px rgba(255, 156, 156, 0.323);
-    }
-
-    /* AI 자동생성 퀴즈 저장소 전용 테마 스타일 (파란색) */
-    .storage-card {
-      position: relative;
-      min-height: 60px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 8px;
-      cursor: pointer;
-      border: 3px solid #000000;
-      background: #4e7ca1;
-      box-shadow: 0px 2px 1px 3px rgba(0, 0, 0, 0.25), inset 0px 0.3px 1px 3px rgba(255, 255, 255, 0.111);
-    }
-
-    .storage-card:hover {
-      background: #5589bd;
-    }
-
-    .storage-title {
-      overflow: hidden;
-      padding-right: 24px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 12px;
-      font-weight: 800;
-      color: white;
-      text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-    }
-
-    .storage-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: auto;
-      background: #84e0ff13;
-      border-radius: 10px;
-    }
-
-    .storage-tag {
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #3d6f98;
-      font-size: 9px;
-      box-shadow: inset 0px 1px 1px 1.8px rgba(0, 0, 0, 0.159);
-    }
-
-    .storage-actions {
-      display: flex;
-      gap: 4px;
-    }
-
-    /* 항목 추가 (새 퀘스트) 회색 버튼 상자 */
-    .add-card {
-      min-height: 44px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2rem;
-      font-weight: 1000;
-      line-height: 1;
-      flex-shrink: 0;
-      padding: 8px;
-      border: 3px solid rgba(0, 0, 0, 0.368);
-      border-radius: 5px;
-      background: rgba(0, 0, 0, 0.216);
-      color: rgba(0, 0, 0, 0.4);
-    }
-
-    /* 화면 우측 하단의 떠있는 타이머 진입 아이콘 */
-    #open-timer-btn {
-      position: absolute;
-      right: 12px;
-      bottom: 48px;
-      z-index: 10;
-      width: 40px;
-      height: 100px;
-      min-width: 40px;
-      min-height: 40px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: transparent !important;
-      animation: bounceUpDown 1.2s ease-in-out infinite;
-    }
-
-    @keyframes bounceUpDown {
-
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-
-      50% {
-        transform: translateY(-10px);
-      }
-    }
-
-    /* 화면 최하단 하단 탭 바 영역 (일일퀘스트 / 퀴즈 퀘스트 스위칭) */
-    #bottom-tab-bar {
-      width: 100%;
-      height: 40px;
-      min-height: 40px;
-      display: flex;
-      flex-shrink: 0;
-      margin-top: auto;
-      border-top: 3px solid #000;
-      background: #1B1613;
-      box-shadow: inset 0px 1px 1px 3px rgba(42, 37, 34, 0.5);
-    }
-
-    .tab {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #6b7280;
-      font-size: 2vh;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    /* 활성화된 하단 탭 스타일 */
-    .tab.active {
-      position: relative;
-      border-right: 3px solid #000;
-      color: #ffffff;
-      background: #B46236;
-      box-shadow: inset 0px 1px 1px 3px rgba(81, 66, 58, 0.5);
-      border-radius: 10px;
-    }
-
-    #tab-storage.active {
-      border-right: 0;
-      border-left: 3px solid #000;
-      background: #3668B4;
-    }
-
-    #tab-quest.active .tab-ui-highlight,
-    #tab-storage.active .tab-ui-highlight {
-      position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: 6px;
-      height: 30px;
-      border-radius: 999px;
-      background: rgba(255, 174, 174, 0.105);
-      pointer-events: none;
-      opacity: 1;
-    }
-
-    /* +XP 경험치 텍스트가 떠오르며 사라지는 효과 */
-    @keyframes xpFloatUp {
-      0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(.6);
-      }
-
-      20% {
-        opacity: 1;
-        transform: translate(-50%, -90%) scale(1.1);
-      }
-
-      100% {
-        opacity: 0;
-        transform: translate(-50%, -220%) scale(1);
-      }
-    }
-
-    /* 모달 내부 메모 목록 아이템 스타일 (클릭 시 확장 지원) */
-    .memo-text {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      cursor: pointer;
-      transition: background 0.2s;
-      padding: 2px;
-      border-radius: 4px;
-      line-height: 1.4;
-      color: #000;
-    }
-
-    .memo-text:hover {
-      background: rgba(0, 0, 0, 0.05);
-    }
-
-    .memo-text.expanded {
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    /* 클릭으로 expanded 붙으면 전체 펼침 */
+    /* 타이머에서 획득한 경험치(+5 XP)가 부드럽게 위로 떠오르는 플로팅 텍스트 효과이다. */
+    .xp-floating-text { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); font-size: 18px; font-weight: 900; color: #22c55e; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; pointer-events: none; z-index: 9999; white-space: nowrap; width: max-content; animation: floatUpAndFade 1.2s ease-out forwards; }
+    @keyframes floatUpAndFade { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -40px); } }
 
     /* ==========================================================================
-       [8] 미디어 쿼리 - 반응형 최적화 (Mobile / Tablet / PC)
+       [8] 미디어 쿼리 - 뷰포트 크기에 따른 반응형 최적화 속성 제어
        ========================================================================== */
-    /* 모바일 환경 대응 */
+    /* 모바일 단말기(가로 해상도 767px 이하) 레이아웃 속성 */
     @media (max-width: 767px) {
-      .mobile-menu-open #left-panel {
-        height: calc(100% - 56px);
-      }
-
-      /* 햄버거 메뉴 오픈 시 좌측 패널 확장 */
-      .mobile-menu-open #right-panel-wrapper {
-        flex: none;
-        height: 56px;
-        min-height: 56px;
-      }
-
-      /* 우측 패널 헤더만 남김 */
-      .mobile-menu-open #bottom-tab-bar {
-        display: none !important;
-      }
+      .mobile-menu-open #left-panel { height: calc(100% - 56px); }
+      .mobile-menu-open #right-panel-wrapper { flex: none; height: 56px; min-height: 56px; }
+      .mobile-menu-open #bottom-tab-bar { display: none !important; }
     }
-
-    @media (min-width: 640px) {
-      #timer-display {
-        font-size: 64px;
-        letter-spacing: .05em;
-      }
-    }
-
-    /* PC 데스크톱 및 태블릿 가로모드 환경 대응 */
+    
+    /* 중간 사이즈 단말기(가로 해상도 640px 이상) 타이머 폰트 제어 */
+    @media (min-width: 640px) { #timer-display { font-size: 64px; letter-spacing: .05em; } }
+    
+    /* 태블릿 및 PC 데스크탑(가로 해상도 768px 이상) 레이아웃 속성 - 가로 모드로 구조를 전환한다. */
     @media (min-width: 768px) {
-
-      /* 앱 래퍼 자체를 가로 비율 5:3 형태의 모니터처럼 배치 */
-      .app {
-        max-width: calc(100vh * 1.6666);
-        max-height: 99%;
-        aspect-ratio: 5 / 3;
-        flex-direction: row;
-        gap: 6px;
-        padding: 4px;
-        box-shadow: 0 25px 50px #0004;
-      }
-
-      /* 좌우 패널 분할 (6:4 비율) */
-      #left-panel {
-        width: 60%;
-        height: 100% !important;
-      }
-
-      #right-panel-wrapper {
-        width: 40%;
-        height: 100% !important;
-        flex: 1 !important;
-      }
-
-      #mobile-toggle-btn {
-        display: none;
-      }
-
-      /* PC에선 햄버거 버튼 불필요 */
-      #bottom-tab-bar {
-        display: flex !important;
-      }
-
-      /* 각종 폰트 및 요소 사이즈 PC 친화적으로 스케일 업 */
-      .goal-title {
-        font-size: 18px;
-        color: white;
-        text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black;
-      }
-
-      .progress-wrap {
-        width: 95%;
-        height: 32px;
-      }
-
-      #progress-text {
-        font-size: 12px;
-      }
-
-      #user-profile-card {
-        width: 160px;
-        padding: 8px;
-      }
-
-      .profile-name {
-        font-size: 14px;
-      }
-
-      .profile-level {
-        font-size: 12px;
-      }
-
-      .lobby-char {
-        width: 30px;
-      }
-
-      .char-nameplate {
-        font-size: 13px;
-      }
-
-      .char-name-text {
-        font-size: 13px;
-      }
-
-      .char-level-text {
-        font-size: 11px;
-      }
-
-      .char-xp-bar-container {
-        height: 5px;
-      }
-
-      .char-exclamation {
-        top: -45px;
-        width: 36px;
-        height: 36px;
-        font-size: 26px;
-      }
-
-      .round-close {
-        top: 16px;
-        left: 16px;
-        width: 40px;
-        height: 40px;
-        border-width: 3px;
-      }
-
-      .timer-layout {
-        justify-content: center;
-        padding-top: 64px;
-        padding-bottom: 40px;
-        overflow: hidden;
-      }
-
-      .timer-top {
-        margin-bottom: -15px;
-        margin-top: 0;
-        align-items: flex-end;
-        width: 85%;
-        max-width: 850px;
-      }
-
-      /* PC용 타이머 캐릭터 및 HUD 비례 렌더링 세팅 */
-      .timer-character {
-        width: 90px;
-        position: relative;
-        z-index: 10;
-      }
-
-      .timer-char-hud {
-        width: 120px;
-        margin-bottom: 6px;
-      }
-
-      .timer-char-hud-name {
-        font-size: 13px;
-      }
-
-      .timer-char-hud-level {
-        font-size: 11px;
-      }
-
-      .timer-char-hud-xpbar {
-        width: 60px;
-        height: 5px;
-      }
-
-      /* 레이아웃 여백 확보 및 패딩 증가 */
-      #speech-bubble {
-        max-width: 500px;
-        margin-bottom: 80px;
-        margin-right: 20px;
-        position: relative;
-        z-index: 15;
-      }
-
-      .bubble {
-        border-width: 4px;
-        padding: 30px 40px;
-        font-size: 20px;
-        border-radius: 40px;
-      }
-
-      .bubble::after {
-        width: 18px;
-        height: 18px;
-        right: -11px;
-        border-width: 4px;
-      }
-
-      .timer-card {
-        width: 85%;
-        max-width: 850px;
-        margin-top: -10px;
-        border-width: 7px;
-        padding: 20px;
-        gap: 16px;
-      }
-
-      .timer-display-wrap {
-        min-height: 120px;
-        padding: 10px 0;
-        border-width: 4px;
-      }
-
-      #timer-display {
-        font-size: 80px;
-      }
-
-      .preset-btn,
-      #reset-timer-btn,
-      #start-timer-btn {
-        border-width: 3px;
-        font-size: 16px;
-      }
-
-      .preset-btn {
-        padding: 10px 0;
-        width: 30%;
-      }
-
-      #reset-timer-btn {
-        width: 20%;
-        padding: 20px 0;
-        font-size: 18px;
-      }
-
-      #start-timer-btn {
-        width: 30%;
-        padding: 20px 0;
-        font-size: 20px;
-      }
-
-      .modal-content {
-        max-width: 85%;
-        padding: 20px;
-        gap: 12px;
-      }
-
-      .field,
-      .fake-field,
-      .area {
-        font-size: 16px;
-      }
-
-      .submit-btn {
-        font-size: 20px;
-      }
-
-      .modal-mini {
-        max-width: 400px !important;
-      }
-
-      .panel-title {
-        padding-top: 4%;
-        padding-bottom: 3%;
-        font-size: 30px;
-        color: white;
-        text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black;
-      }
-
-      .list {
-        gap: 3%;
-        padding: 0 4% 20%;
-      }
-
-      .todo-card,
-      .quiz-card,
-      .add-card {
-        min-height: 48px;
-      }
-
-      .todo-card input,
-      .quiz-card input,
-      .storage-title {
-        font-size: 14px;
-        color: black;
-        text-shadow: -1px 0 lightgray, 0 1px lightgray, 1px 0 lightgray, 0 -1px lightgray
-      }
-
-      #open-timer-btn {
-        right: 5%;
-        bottom: 15%;
-        width: 12%;
-        max-width: 64px;
-        max-height: 64px;
-        aspect-ratio: 1;
-      }
-
-      #bottom-tab-bar {
-        height: 10%;
-        min-height: 48px;
-      }
-
-      .tab {
-        font-size: 3vh;
-      }
+      .app { max-width: calc(100vh * 1.6666); max-height: 99%; aspect-ratio: 5 / 3; flex-direction: row; gap: 6px; padding: 4px; box-shadow: 0 25px 50px #0004; }
+      #left-panel { width: 60%; height: 100% !important; }
+      #right-panel-wrapper { width: 40%; height: 100% !important; flex: 1 !important; }
+      #mobile-toggle-btn { display: none; }
+      #bottom-tab-bar { display: flex !important; }
+      .goal-title { font-size: 18px; color: white; text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black; }
+      .progress-wrap { width: 95%; height: 32px; }
+      #progress-text { font-size: 12px; }
+      #user-profile-card { width: 160px; padding: 8px; }
+      .profile-name { font-size: 14px; }
+      .profile-level { font-size: 12px; }
+      .lobby-char { width: 30px; }
+      .char-nameplate { font-size: 13px; }
+      .char-name-text { font-size: 13px; }
+      .char-level-text { font-size: 11px; }
+      .char-xp-bar-container { height: 5px; }
+      .char-exclamation { top: -45px; width: 36px; height: 36px; font-size: 26px; }
+      .round-close { top: 16px; left: 16px; width: 40px; height: 40px; border-width: 3px; }
+      .timer-layout { justify-content: center; padding-top: 64px; padding-bottom: 40px; overflow: hidden; }
+      .timer-top { margin-bottom: -15px; margin-top: 0; align-items: flex-end; width: 85%; max-width: 850px; }
+      .timer-character { width: 90px; position: relative; z-index: 10; }
+      .timer-char-hud { width: 120px; margin-bottom: 6px; }
+      .timer-char-hud-name { font-size: 13px; }
+      .timer-char-hud-level { font-size: 11px; }
+      .timer-char-hud-xpbar { width: 60px; height: 5px; }
+      #speech-bubble { max-width: 500px; margin-bottom: 80px; margin-right: 20px; position: relative; z-index: 15; }
+      .bubble { border-width: 4px; padding: 30px 40px; font-size: 20px; border-radius: 40px; }
+      .bubble::after { width: 18px; height: 18px; right: -11px; border-width: 4px; }
+      .timer-card { width: 85%; max-width: 850px; margin-top: -10px; border-width: 7px; padding: 20px; gap: 16px; }
+      .timer-display-wrap { min-height: 120px; padding: 10px 0; border-width: 4px; }
+      #timer-display { font-size: 80px; }
+      .preset-btn, #reset-timer-btn, #start-timer-btn { border-width: 3px; font-size: 16px; }
+      .preset-btn { padding: 10px 0; width: 30%; }
+      #reset-timer-btn { width: 20%; padding: 20px 0; font-size: 18px; }
+      #start-timer-btn { width: 30%; padding: 20px 0; font-size: 20px; }
+      .modal-content { max-width: 85%; padding: 20px; gap: 12px; }
+      .field, .fake-field, .area { font-size: 16px; }
+      .submit-btn { font-size: 20px; }
+      .modal-mini { max-width: 400px !important; }
+      .panel-title { padding-top: 4%; padding-bottom: 3%; font-size: 30px; color: white; text-shadow: -1.2px 0 black, 0 1.2px black, 1.2px 0 black, 0 -1.2px black; }
+      .list { gap: 3%; padding: 0 4% 20%; }
+      .todo-card, .quiz-card, .add-card { min-height: 48px; }
+      .todo-card input, .quiz-card input, .storage-title { font-size: 14px; color: black; text-shadow: -1px 0 lightgray, 0 1px lightgray, 1px 0 lightgray, 0 -1px lightgray }
+      #open-timer-btn { right: 5%; bottom: 15%; width: 12%; max-width: 64px; max-height: 64px; aspect-ratio: 1; }
+      #bottom-tab-bar { height: 10%; min-height: 48px; }
+      .tab { font-size: 3vh; }
     }
-
-    /* 1024px 이상 대화면 디스플레이 대응 */
+    
+    /* 데스크탑 와이드 모니터(가로 해상도 1024px 이상) 추가 크기 제어 속성이다. */
     @media (min-width: 1024px) {
-      .goal-title {
-        font-size: 20px;
-      }
-
-      #progress-text {
-        font-size: 14px;
-      }
-
-      #user-profile-card {
-        width: 200px;
-        padding: 12px;
-      }
-
-      .profile-name {
-        font-size: 16px;
-      }
-
-      .profile-level {
-        font-size: 14px;
-      }
-
-      #timer-display {
-        font-size: 100px;
-      }
-
-      .panel-title {
-        font-size: 36px;
-      }
-
-      .tab {
-        font-size: 3vh;
-      }
+      .goal-title { font-size: 20px; } #progress-text { font-size: 14px; } #user-profile-card { width: 200px; padding: 12px; } .profile-name { font-size: 16px; } .profile-level { font-size: 14px; } #timer-display { font-size: 100px; } .panel-title { font-size: 36px; } .tab { font-size: 3vh; }
     }
