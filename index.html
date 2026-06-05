@@ -297,7 +297,7 @@
 
       // 인자로 전달된 수치만큼 특정 캐릭터에게 경험치(XP)를 부여하고 레벨업 여부를 판별한다.
       function gainXP(amount, charIdx = 0) {
-        if (charIdx >= state.characters.length) charIdx = 0;
+        if (charIdx >= state.characters.length || charIdx < 0) charIdx = 0;
         const char = state.characters[charIdx];
         if (char.level >= MAX_LEVEL) { showFloat('만렙 달성!', false, charIdx); return; }
         
@@ -338,8 +338,8 @@
               state.characters = loadedState.characters;
               // 누락된 속성이나 좌표가 잘못된 객체에 대해 마이그레이션(보정)을 수행한다.
               state.characters.forEach(c => {
-                if (typeof c.x !== 'number' || isNaN(c.x)) { c.x = 50; needsSave = true; } 
-                if (typeof c.y !== 'number' || isNaN(c.y)) { c.y = 80; needsSave = true; }
+                if (typeof c.x !== 'number' || isNaN(c.x) || c.x < 0 || c.x > 100) { c.x = 50; needsSave = true; } 
+                if (typeof c.y !== 'number' || isNaN(c.y) || c.y < 0 || c.y > 100) { c.y = 80; needsSave = true; }
                 if (c.headType === undefined || c.quizTypes === undefined) needsSave = true; initCharParts(c); 
               });
             } else { needsSave = true; }
@@ -428,6 +428,10 @@
     // 문자열에 포함된 XSS 공격 및 이스케이프 문자 파괴를 방지하는 치환 유틸리티 함수이다.
     function escapeHTML(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char])); }
 
+    // [버그수정] Date.now() ID 충돌 방지용 고유 ID 생성기
+    let __uidSeq = 0;
+    function uid() { return Date.now() * 1000 + (__uidSeq++ % 1000); }
+
     // 로컬 환경의 애플리케이션 스토리지 구조체를 읽어 메모리에 복원하는 역할을 수행한다.
     function loadAppData() {
       try {
@@ -483,7 +487,7 @@
         addBtn.setAttribute('tabindex', '0');
         addBtn.innerHTML = '<span>+</span>';
         addBtn.style.position = 'sticky'; addBtn.style.top = '0'; addBtn.style.zIndex = '10'; addBtn.style.marginBottom = '8px'; addBtn.style.backdropFilter = 'blur(8px)'; addBtn.style.WebkitBackdropFilter = 'blur(8px)';
-        addBtn.onclick = () => { const newId = Date.now(); todoList.push({ id: newId, type: 'todo', title: '', status: 'ready', isEditing: true }); renderAll(); };
+        addBtn.onclick = () => { const newId = uid(); todoList.push({ id: newId, type: 'todo', title: '', status: 'ready', isEditing: true }); renderAll(); };
         container.appendChild(addBtn);
       }
 
@@ -512,7 +516,17 @@
         let innerHTML = `<div style="display:flex; align-items:center; width:100%; overflow:hidden;">`;
 
         // 드래그 핸들 기호 및 서브태스크 생성 버튼을 포함한 좌측 UI 요소를 결합한다.
-        if (!isLogView) { innerHTML += `<span class="drag-handle" style="cursor:grab;">≡</span>`; innerHTML += `<button class="folder-add-btn" onclick="handleAddSubtask(event, ${item.id})">+</button>`; } else { if (item.subtasks && item.subtasks.length > 0) { innerHTML += `<span style="margin-right:8px; color:gray; font-size:18px;">${item.isExpanded ? '-' : '+'}</span>`; } }
+        if (!isLogView) {
+          // ≡(바 3개) → 세모(▶). 펼침이면 .expanded 로 90° 회전(▼)
+          // [키보드 내비게이션 지원] tabindex="0" 및 클릭/엔터 토글 이벤트 추가 (포인터 이벤트 복구)
+          innerHTML += `<span class="drag-handle fold-triangle${item.isExpanded ? ' expanded' : ''}" tabindex="0" onclick="window.toggleTodoExpand(event, ${item.id})" style="cursor:grab; pointer-events:auto;">▶</span>`;
+          innerHTML += `<button class="folder-add-btn" onclick="handleAddSubtask(event, ${item.id})">+</button>`;
+        } else {
+          if (item.subtasks && item.subtasks.length > 0) {
+            // 로그 뷰의 +/- 도 세모로 통일
+            innerHTML += `<span class="fold-triangle${item.isExpanded ? ' expanded' : ''}" tabindex="0" onclick="window.toggleTodoExpand(event, ${item.id})" style="margin-right:8px; color:gray; cursor:pointer; pointer-events:auto;">▶</span>`;
+          }
+        }
 
         // 목표 텍스트 렌더링에 필요한 인풋 필드 마크업을 동적으로 할당한다.
         innerHTML += `
@@ -585,12 +599,49 @@
     }
 
     // 투두 카드 클릭 시 상태 트리거 로직을 정의한다. (자식 요소 토글 기능 포함)
-    window.onCardClick = function(e, id) { if (isDraggingTodoItem) return; const item = todoList.find(t => t.id === id); if (!item) return; if (item.isEditing) return; if (item.subtasks && item.subtasks.length > 0) { item.isExpanded = !item.isExpanded; renderAll(); } };
+    window.onCardClick = function(e, id) {
+      if (isDraggingTodoItem) return;
+      const item = todoList.find(t => t.id === id);
+      if (!item || item.isEditing) return;
+      if (item.subtasks && item.subtasks.length > 0) {
+        item.isExpanded = !item.isExpanded;
+        // 세모를 먼저 회전시킨 뒤 목록 갱신
+        const tri = e.currentTarget.querySelector('.fold-triangle');
+        if (tri) { tri.classList.toggle('expanded', item.isExpanded); setTimeout(renderAll, 200); }
+        else renderAll();
+      }
+    };
     window.onCardDblClick = function(e, id) { e.preventDefault(); if (window.getSelection) window.getSelection().removeAllRanges(); if (isDraggingTodoItem) return; const item = todoList.find(t => t.id === id); if (!item || item.status === 'clear') return; if (!item.isEditing) window.makeTodoEditable(id); };
-    window.onLogCardClick = function(e, id) { const item = todoList.find(t => t.id === id); if (!item) return; if (item.subtasks && item.subtasks.length > 0) { item.isExpanded = !item.isExpanded; renderAll(); } };
+    window.onLogCardClick = function(e, id) {
+      const item = todoList.find(t => t.id === id);
+      if (!item) return;
+      if (item.subtasks && item.subtasks.length > 0) {
+        item.isExpanded = !item.isExpanded;
+        const tri = e.currentTarget.querySelector('.fold-triangle');
+        if (tri) { tri.classList.toggle('expanded', item.isExpanded); setTimeout(renderAll, 200); }
+        else renderAll();
+      }
+    };
+
+    // 일일퀘스트 세모(▶) 아이콘 클릭 및 엔터 입력 시 하위 목표 펼침/접기를 수행한다.
+    window.toggleTodoExpand = function(e, id) {
+      e.stopPropagation();
+      const item = todoList.find(t => t.id === id);
+      if (!item || item.isEditing) return;
+      if (item.subtasks && item.subtasks.length > 0) {
+        item.isExpanded = !item.isExpanded;
+        const tri = e.currentTarget;
+        if (tri && tri.classList.contains('fold-triangle')) { 
+          tri.classList.toggle('expanded', item.isExpanded); 
+          setTimeout(renderAll, 200); 
+        } else {
+          renderAll();
+        }
+      }
+    };
 
     // 폴더(+) 버튼 클릭을 감지하여 새로운 서브태스크 객체를 초기화하고 삽입한다.
-    window.handleAddSubtask = function(e, parentId) { e.stopPropagation(); const item = todoList.find(t => t.id === parentId); if (!item) return; if (!item.subtasks) item.subtasks = []; const newSubId = Date.now(); item.subtasks.push({ id: newSubId, title: '', status: 'ready', isEditing: true }); item.isExpanded = true; renderAll(); };
+    window.handleAddSubtask = function(e, parentId) { e.stopPropagation(); const item = todoList.find(t => t.id === parentId); if (!item) return; if (!item.subtasks) item.subtasks = []; const newSubId = uid(); item.subtasks.push({ id: newSubId, title: '', status: 'ready', isEditing: true }); item.isExpanded = true; renderAll(); };
     window.onSubCardDblClick = function(e, parentId, subId) { e.preventDefault(); if (window.getSelection) window.getSelection().removeAllRanges(); const item = todoList.find(t => t.id === parentId); if (!item) return; const sub = item.subtasks.find(s => s.id === subId); if (!sub || sub.status === 'clear') return; if (!sub.isEditing) { sub.isEditing = true; renderAll(); } };
 
     // 하위 퀘스트 입력 상태 소실 시 텍스트 검증 및 속성 재설정을 수행한다. 빈칸 시 삭제한다.
@@ -648,7 +699,7 @@
       if (!memo) return; 
       editingMemoId = memoId; 
       targetCharIdxForMemo = charIdx; 
-      const charName = window.Questify.getCharacters()[charIdx].name; 
+      const charName = window.Questify.getCharacters()[charIdx]?.name || '캐릭터'; 
       document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터의 메모를 수정합니다.`; 
       const input = document.getElementById('input-notepad-content'); 
       input.value = memo.content; 
@@ -689,7 +740,7 @@
     window.submitNotepad = function() { document.getElementById('btn-submit-notepad').click(); };
     document.getElementById('btn-open-notepad').onclick = () => { 
       editingMemoId = null; 
-      const charName = window.Questify.getCharacters()[targetCharIdxForMemo].name; 
+      const charName = window.Questify.getCharacters()[targetCharIdxForMemo]?.name || '캐릭터'; 
       document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터에게 메모를 추가합니다.`; 
       document.getElementById('input-notepad-content').value = ''; 
       
@@ -712,7 +763,7 @@
             showCustomAlert('메모가 수정되었습니다!', () => { renderCharMemos(targetCharIdxForMemo); openSpecificModal('char-memo-modal'); }); 
         } else { 
             // 새로운 메모 생성 시 개별 속성에 데이터를 욱여넣지 않고 캐릭터 귀속 방식으로 순수 텍스트만 기록한다.
-            memoStorage.push({ id: Date.now(), charIdx: targetCharIdxForMemo, content: content, date: new Date().toLocaleDateString() }); 
+            memoStorage.push({ id: uid(), charIdx: targetCharIdxForMemo, content: content, date: new Date().toLocaleDateString() }); 
             saveAppData(); 
             showCustomAlert('메모가 저장되었습니다!\n(문제는 시간 경과에 따라 자동으로 생성됩니다.)', () => { renderCharMemos(targetCharIdxForMemo); openSpecificModal('char-memo-modal'); renderAll(); }); 
         } 
@@ -769,7 +820,7 @@
         const apiKey = localStorage.getItem('gemini_api_key'); 
         if (!apiKey) return; 
         
-        // 50%의 난수를 통과한 턴에 한해 무작위 메모 소스를 선정한다.
+        // 50%의 난수를 통과한 턴에 한해무작위 메모 소스를 선정한다.
         if (Math.random() < 0.5) { 
             const randomMemo = memoStorage[Math.floor(Math.random() * memoStorage.length)]; 
             const chars = window.Questify.getCharacters(); 
@@ -794,7 +845,7 @@
                 // 유효한 파싱 데이터가 확인될 경우 저장소 캐싱 후 상태 및 UI를 갱신한다.
                 if (generated && generated.length > 0) { 
                     const newQuiz = generated[0]; 
-                    quizStorage.push({ id: Date.now(), title: newQuiz.title || "AI 생성 문제", content: newQuiz.question || newQuiz.content || "문제 내용", options: newQuiz.options || [], answer: newQuiz.answer || "자유 응답형", explanation: newQuiz.explanation || "해설이 제공되지 않았습니다.", type: quizType, charIdx: randomMemo.charIdx }); 
+                    quizStorage.push({ id: uid(), title: newQuiz.title || "AI 생성 문제", content: newQuiz.question || newQuiz.content || "문제 내용", options: newQuiz.options || [], answer: newQuiz.answer || "자유 응답형", explanation: newQuiz.explanation || "해설이 제공되지 않았습니다.", type: quizType, charIdx: randomMemo.charIdx }); 
                     aliveChar.showExclamation = true; 
                     saveAppData(); window.Questify.saveState(); window.Questify.updateUI(); renderStorageList(); 
                 } 
@@ -873,7 +924,7 @@
     function dragChar(e) { if (!isCharDragging || !dragTargetChar) return; const point = e.type.includes('mouse') ? e : e.touches[0]; if (Math.abs(point.clientX - charStartX) > 5 || Math.abs(point.clientY - charStartY) > 5) dragMoved = true; if (dragMoved) { e.preventDefault(); let newLeft = charInitialLeft + (point.clientX - charStartX); let newTop = charInitialTop + (point.clientY - charStartY); const parentRect = gameScreenBox.getBoundingClientRect(); const rect = dragTargetChar.getBoundingClientRect(); let halfW = rect.width / 2; let halfH = rect.height / 2; if (newLeft - halfW < 0) newLeft = halfW; if (newTop - halfH < 0) newTop = halfH; if (newLeft + halfW > parentRect.width) newLeft = parentRect.width - halfW; if (newTop + halfH > parentRect.height) newTop = parentRect.height - halfH; dragTargetChar.style.left = newLeft + 'px'; dragTargetChar.style.top = newTop + 'px'; } }
     
     // 드래그 종료 시 타 캐릭터와의 충돌/겹침을 보정 처리하고 객체의 백분율 좌표를 모델 상태에 기록 반영한다.
-    function endCharDrag(e) { if (!isCharDragging || !dragTargetChar) return; isCharDragging = false; if (!dragMoved) { const clickedIdx = parseInt(dragTargetChar.dataset.idx); targetCharIdxForMemo = clickedIdx; renderCharMemos(clickedIdx); openSpecificModal('char-memo-modal'); dragTargetChar = null; return; } const parentRect = gameScreenBox.getBoundingClientRect(); if (parentRect.width === 0 || parentRect.height === 0) { dragTargetChar = null; return; } let currentLeft = parseFloat(dragTargetChar.style.left); let currentTop = parseFloat(dragTargetChar.style.top); const others = Array.from(document.querySelectorAll('.lobby-char')).filter(el => el !== dragTargetChar); others.forEach(other => { const oLeft = other.offsetLeft; const oTop = other.offsetTop; const dist = Math.hypot(currentLeft - oLeft, currentTop - oTop); if (dist < 50) { currentLeft += 50; currentTop += 50; } }); let pctX = (currentLeft / parentRect.width) * 100; let pctY = (currentTop / parentRect.height) * 100; if (isNaN(pctX) || pctX < 0) pctX = 50; if (isNaN(pctY) || pctY < 0) pctY = 80; dragTargetChar.style.left = pctX + '%'; dragTargetChar.style.top = pctY + '%'; const idx = parseInt(dragTargetChar.dataset.idx); const chars = window.Questify.getCharacters(); if (chars[idx]) { chars[idx].x = pctX; chars[idx].y = pctY; window.Questify.saveState(); } dragTargetChar = null; }
+    function endCharDrag(e) { if (!isCharDragging || !dragTargetChar) return; isCharDragging = false; if (!dragMoved) { const clickedIdx = parseInt(dragTargetChar.dataset.idx); targetCharIdxForMemo = clickedIdx; renderCharMemos(clickedIdx); openSpecificModal('char-memo-modal'); dragTargetChar = null; return; } const parentRect = gameScreenBox.getBoundingClientRect(); if (parentRect.width === 0 || parentRect.height === 0) { dragTargetChar = null; return; } let currentLeft = parseFloat(dragTargetChar.style.left); let currentTop = parseFloat(dragTargetChar.style.top); const others = Array.from(document.querySelectorAll('.lobby-char')).filter(el => el !== dragTargetChar); others.forEach(other => { const oLeft = other.offsetLeft; const oTop = other.offsetTop; const dist = Math.hypot(currentLeft - oLeft, currentTop - oTop); if (dist < 50) { currentLeft += 50; currentTop += 50; } }); let pctX = (currentLeft / parentRect.width) * 100; let pctY = (currentTop / parentRect.height) * 100; if (isNaN(pctX) || pctX < 0) pctX = 50; if (isNaN(pctY) || pctY < 0) pctY = 80; pctX = Math.max(2, Math.min(92, pctX)); pctY = Math.max(5, Math.min(90, pctY)); dragTargetChar.style.left = pctX + '%'; dragTargetChar.style.top = pctY + '%'; const idx = parseInt(dragTargetChar.dataset.idx); const chars = window.Questify.getCharacters(); if (chars[idx]) { chars[idx].x = pctX; chars[idx].y = pctY; window.Questify.saveState(); } dragTargetChar = null; }
     document.addEventListener('mousemove', dragChar); document.addEventListener('mouseup', endCharDrag); document.addEventListener('touchmove', dragChar, { passive: false }); document.addEventListener('touchend', endCharDrag); document.addEventListener('touchcancel', endCharDrag); window.addEventListener('blur', endCharDrag); 
 
     // 게임 로비의 적막함을 방지하기 위한 대사 출력 데몬. 랜덤한 타이밍에 타겟을 뽑아 말풍선을 표시한다.
@@ -939,7 +990,7 @@
       const charAfter = chars[timerSelectedCharIdx]; const levelAfter = charAfter ? charAfter.level : 1; const charName = charAfter ? charAfter.name : '캐릭터'; 
       document.getElementById('result-char-name').innerText = charName; const lvTextEl = document.getElementById('result-lv-text'); if(levelAfter > levelBefore) { lvTextEl.innerText = `🎉 레벨업! Lv.${levelBefore} ➔ Lv.${levelAfter}`; } else { lvTextEl.innerText = `현재 Lv.${levelAfter}`; } document.getElementById('timer-result-overlay').classList.remove('hidden'); 
     }
-    document.getElementById('result-btn-memo').addEventListener('click', () => { document.getElementById('timer-result-overlay').classList.add('hidden'); toggleTimerScreen(); targetCharIdxForMemo = timerSelectedCharIdx; const charName = window.Questify.getCharacters()[targetCharIdxForMemo].name; document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터에게 메모를 추가합니다.`; document.getElementById('input-notepad-content').value = ''; openSpecificModal('notepad-modal'); });
+    document.getElementById('result-btn-memo').addEventListener('click', () => { document.getElementById('timer-result-overlay').classList.add('hidden'); toggleTimerScreen(); targetCharIdxForMemo = timerSelectedCharIdx; const charName = window.Questify.getCharacters()[targetCharIdxForMemo]?.name || '캐릭터'; document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터에게 메모를 추가합니다.`; document.getElementById('input-notepad-content').value = ''; openSpecificModal('notepad-modal'); });
     document.getElementById('result-btn-skip').addEventListener('click', () => { document.getElementById('timer-result-overlay').classList.add('hidden'); });
 
     // 사용자의 키보드 입력 인터랙션을 분석하여 디지털 타이머 배열 요소를 커스텀으로 변환/조작한다.
@@ -1086,7 +1137,7 @@
     document.getElementById('btn-reset-all-data').addEventListener('click', () => { showCustomConfirm('경고: 모든 데이터가 삭제됩니다.\n정말 삭제하시겠습니까?', () => { localStorage.clear(); location.reload(); }); });
     
     // 프롬프트 입력을 통한 개별 캐릭터 단위의 식별명 변경 처리를 수행한다.
-    window.renameChar = function (idx) { const currentName = window.Questify.getCharacters()[idx].name; showCustomPrompt('새로운 캐릭터 이름을 입력하세요:', currentName, (newName) => { if (newName && newName.trim()) { window.Questify.getCharacters()[idx].name = newName.trim().substring(0, 10); window.Questify.saveState(); window.Questify.updateUI(); renderSlotInventory(); } }); }
+    window.renameChar = function (idx) { if (!window.Questify.getCharacters()[idx]) return; const currentName = window.Questify.getCharacters()[idx].name; showCustomPrompt('새로운 캐릭터 이름을 입력하세요:', currentName, (newName) => { if (newName && newName.trim()) { window.Questify.getCharacters()[idx].name = newName.trim().substring(0, 10); window.Questify.saveState(); window.Questify.updateUI(); renderSlotInventory(); } }); }
     
     // 특정 캐릭터 객체의 파기 지시가 내려지면, 연관 배열인 메모와 퀴즈 객체를 동시에 적출 및 폐기한다.
     window.deleteChar = function (idx) { 
@@ -1105,6 +1156,13 @@
         // 2. 삭제된 슬롯 후방에 위치하던 캐릭터들의 배열 인덱스 시프트를 동기화하여 고아 데이터를 방지한다.
         quizStorage.forEach(q => { if (q.charIdx > idx) q.charIdx--; }); 
         memoStorage.forEach(m => { if (m.charIdx > idx) m.charIdx--; }); 
+
+        // [버그수정] 삭제로 인덱스가 밀려 전역 포인터가 범위를 벗어나 모달이 죽는 것을 방지
+        const __maxIdx = chars.length - 1;
+        if (targetCharIdxForMemo > __maxIdx) targetCharIdxForMemo = __maxIdx;
+        if (timerSelectedCharIdx > __maxIdx) timerSelectedCharIdx = __maxIdx;
+        if (targetCharIdxForMemo < 0) targetCharIdxForMemo = 0;
+        if (timerSelectedCharIdx < 0) timerSelectedCharIdx = 0;
         
         saveAppData(); // 데이터 삭제분과 오프셋 변동을 영구 볼륨에 즉시 반영한다.
         window.Questify.saveState(); 
@@ -1250,8 +1308,15 @@
     function initSystemGuide() {
       if (document.getElementById('questify-guide-module')) return;
       const guideHTML = `    <div id="questify-guide-module" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;">      <div class="guide-tooltip">        <h4>🎮 Questify 시스템 가이드</h4>        <p>공부하고 메모를 남기면 캐릭터가 성장하는 방치형 퀴즈 RPG 육성 게임입니다</p>        <div class="guide-rewards">          <div style="color: #059669;">📝 하위 퀘스트 완료: +5 XP</div>          <div style="color: #2563eb;">🔥 메인 퀘스트 클리어: +20 XP</div>          <div style="color: #7c3aed;">💡 일반 AI 퀴즈 정답: +20 XP</div>          <div style="color: #dc2626;">🎁 로비 서프라이즈 퀴즈: +30 XP</div>          <div style="color: #d97706;">⏳ 집중 타이머 완료: +50 XP</div>        </div>        <p class="guide-footer">※ 캐릭터 머리 위의 느낌표(!)를 클릭해 문제를 풀어보세요</p>      </div>      <div class="guide-icon">?</div>    </div>  `;
-      const styleHTML = `    <style>      #questify-guide-module .guide-tooltip {        display: none; position: absolute; bottom: 35px; left: 0; width: 280px;        background: #fff; border: 3px solid #000; border-radius: 10px; padding: 12px;        box-shadow: 4px -4px 0px #000; font-family: inherit;      }      #questify-guide-module .guide-tooltip h4 {        margin: 0 0 8px 0; font-size: 15px; color: #1e3a8a; font-weight: 900;        border-bottom: 2px dashed #000; padding-bottom: 4px;      }      #questify-guide-module .guide-tooltip p {        margin: 0 0 8px 0; font-size: 12px; line-height: 1.4; color: #374151; font-weight: 800;      }      #questify-guide-module .guide-rewards {        background: #f3f4f6; border: 2px solid #000; border-radius: 6px; padding: 6px;        font-size: 11px; font-weight: 800; display: flex; flex-direction: column; gap: 4px;      }      #questify-guide-module .guide-footer {        margin: 8px 0 0 0 !important; font-size: 10px !important; color: #6b7280 !important;        text-align: center; font-weight: 700 !important;      }      #questify-guide-module .guide-icon {        width: 28px; height: 28px; background: #f59e0b; color: #fff; border: 3px solid #000;        border-radius: 50%; display: flex; align-items: center; justify-content: center;        font-weight: 900; font-size: 16px; cursor: help;      }      #questify-guide-module:hover .guide-tooltip { display: block; }      #questify-guide-module .guide-icon:hover {        background: #d97706; transform: scale(1.1); transition: transform 0.1s ease;      }    </style>  `;
+      const styleHTML = `    <style>      #questify-guide-module .guide-tooltip {        display: none; position: absolute; bottom: 35px; left: 0; width: 280px;        background: #fff; border: 3px solid #000; border-radius: 10px; padding: 12px;        box-shadow: 4px -4px 0px #000; font-family: inherit;      }      #questify-guide-module .guide-tooltip h4 {        margin: 0 0 8px 0; font-size: 15px; color: #1e3a8a; font-weight: 900;        border-bottom: 2px dashed #000; padding-bottom: 4px;      }      #questify-guide-module .guide-tooltip p {        margin: 0 0 8px 0; font-size: 12px; line-height: 1.4; color: #374151; font-weight: 800;      }      #questify-guide-module .guide-rewards {        background: #f3f4f6; border: 2px solid #000; border-radius: 6px; padding: 6px;        font-size: 11px; font-weight: 800; display: flex; flex-direction: column; gap: 4px;      }      #questify-guide-module .guide-footer {        margin: 8px 0 0 0 !important; font-size: 10px !important; color: #6b7280 !important;        text-align: center; font-weight: 700 !important;      }      #questify-guide-module .guide-icon {        width: 28px; height: 28px; background: #f59e0b; color: #fff; border: 3px solid #000;        border-radius: 50%; display: flex; align-items: center; justify-content: center;        font-weight: 900; font-size: 16px; cursor: help;      }      #questify-guide-module:hover .guide-tooltip, #questify-guide-module.show-guide .guide-tooltip { display: block; }      #questify-guide-module .guide-icon:hover {        background: #d97706; transform: scale(1.1); transition: transform 0.1s ease;      }    </style>  `;
       document.body.insertAdjacentHTML('beforeend', guideHTML + styleHTML);
+      // [버그수정] 모바일 터치 대응: ? 아이콘 탭으로 툴팁 토글
+      const __gm = document.getElementById('questify-guide-module');
+      if (__gm) {
+        const __gi = __gm.querySelector('.guide-icon');
+        if (__gi) __gi.addEventListener('click', (ev) => { ev.stopPropagation(); __gm.classList.toggle('show-guide'); });
+        document.addEventListener('click', (ev) => { if (!__gm.contains(ev.target)) __gm.classList.remove('show-guide'); });
+      }
     }
     initSystemGuide();
 
