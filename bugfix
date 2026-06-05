@@ -1,0 +1,99 @@
+[Questify 버그 수정]
+
+index.html 에 적용. [찾기] → [교체] 순서대로.
+
+
+========== 버그 1 — 삭제 후 모달 먹통 ==========
+
+[1-a] deleteChar 인덱스 클램프
+[찾기]
+        memoStorage.forEach(m => { if (m.charIdx > idx) m.charIdx--; });
+[교체]
+        memoStorage.forEach(m => { if (m.charIdx > idx) m.charIdx--; });
+
+        // [버그수정] 삭제로 인덱스가 밀려 전역 포인터가 범위를 벗어나 모달이 죽는 것을 방지
+        const __maxIdx = chars.length - 1;
+        if (targetCharIdxForMemo > __maxIdx) targetCharIdxForMemo = __maxIdx;
+        if (timerSelectedCharIdx > __maxIdx) timerSelectedCharIdx = __maxIdx;
+        if (targetCharIdxForMemo < 0) targetCharIdxForMemo = 0;
+        if (timerSelectedCharIdx < 0) timerSelectedCharIdx = 0;
+
+[1-b] 크래시 지점 옵셔널 체이닝 (★전체 바꾸기 - 2곳)
+[찾기]   window.Questify.getCharacters()[targetCharIdxForMemo].name
+[교체]   window.Questify.getCharacters()[targetCharIdxForMemo]?.name || '캐릭터'
+
+[1-c] editMemo (1곳)
+[찾기]   window.Questify.getCharacters()[charIdx].name
+[교체]   window.Questify.getCharacters()[charIdx]?.name || '캐릭터'
+
+[1-d] renameChar 가드
+[찾기]
+    window.renameChar = function (idx) { const currentName = window.Questify.getCharacters()[idx].name;
+[교체]
+    window.renameChar = function (idx) { if (!window.Questify.getCharacters()[idx]) return; const currentName = window.Questify.getCharacters()[idx].name;
+
+
+========== 버그 2 — 드래그 시 캐릭터 화면 밖 실종 ==========
+
+[2-a] endCharDrag 좌표 클램프
+[찾기]
+if (isNaN(pctX) || pctX < 0) pctX = 50; if (isNaN(pctY) || pctY < 0) pctY = 80;
+[교체]
+if (isNaN(pctX) || pctX < 0) pctX = 50; if (isNaN(pctY) || pctY < 0) pctY = 80; pctX = Math.max(2, Math.min(92, pctX)); pctY = Math.max(5, Math.min(90, pctY));
+
+[2-b] load() 좌표 복구 (x, y 각각)
+[찾기]
+if (typeof c.x !== 'number' || isNaN(c.x)) { c.x = 50; needsSave = true; }
+[교체]
+if (typeof c.x !== 'number' || isNaN(c.x) || c.x < 0 || c.x > 100) { c.x = 50; needsSave = true; }
+
+[찾기]
+if (typeof c.y !== 'number' || isNaN(c.y)) { c.y = 80; needsSave = true; }
+[교체]
+if (typeof c.y !== 'number' || isNaN(c.y) || c.y < 0 || c.y > 100) { c.y = 80; needsSave = true; }
+
+
+========== 버그 3 — Date.now() ID 충돌 ==========
+
+[3-a] 고유 ID 생성기 추가
+두 번째 <script> 안, "function escapeHTML" 바로 윗줄에 아래 3줄 추가:
+
+    // [버그수정] Date.now() ID 충돌 방지용 고유 ID 생성기
+    let __uidSeq = 0;
+    function uid() { return Date.now() * 1000 + (__uidSeq++ % 1000); }
+
+[3-b] ID 4곳 교체 (★타이머용 Date.now()는 건드리지 말 것)
+[찾기] const newId = Date.now();          [교체] const newId = uid();
+[찾기] const newSubId = Date.now();       [교체] const newSubId = uid();
+[찾기] memoStorage.push({ id: Date.now()  [교체] memoStorage.push({ id: uid()
+[찾기] quizStorage.push({ id: Date.now()  [교체] quizStorage.push({ id: uid()
+
+
+========== 버그 4 — 가이드 모바일 미동작 ==========
+
+[4-a] CSS 토글 셀렉터 추가
+[찾기]
+#questify-guide-module:hover .guide-tooltip { display: block; }
+[교체]
+#questify-guide-module:hover .guide-tooltip, #questify-guide-module.show-guide .guide-tooltip { display: block; }
+
+[4-b] ? 아이콘 탭 토글 JS
+[찾기]
+      document.body.insertAdjacentHTML('beforeend', guideHTML + styleHTML);
+[교체]
+      document.body.insertAdjacentHTML('beforeend', guideHTML + styleHTML);
+      // [버그수정] 모바일 터치 대응: ? 아이콘 탭으로 툴팁 토글
+      const __gm = document.getElementById('questify-guide-module');
+      if (__gm) {
+        const __gi = __gm.querySelector('.guide-icon');
+        if (__gi) __gi.addEventListener('click', (ev) => { ev.stopPropagation(); __gm.classList.toggle('show-guide'); });
+        document.addEventListener('click', (ev) => { if (!__gm.contains(ev.target)) __gm.classList.remove('show-guide'); });
+      }
+
+
+========== 버그 5 — gainXP 음수 인덱스 방어 ==========
+
+[찾기]
+if (charIdx >= state.characters.length) charIdx = 0;
+[교체]
+if (charIdx >= state.characters.length || charIdx < 0) charIdx = 0;
