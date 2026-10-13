@@ -528,6 +528,10 @@
       }
     }
 
+    .crown-bronze {
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8)) grayscale(1) sepia(1) hue-rotate(-15deg) saturate(4) brightness(0.55) contrast(1.4);
+    }
+
     .crown-silver {
       filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8)) grayscale(1) brightness(0.85) contrast(1.5);
     }
