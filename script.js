@@ -202,6 +202,8 @@ modalOverlay.addEventListener('click', (e) => {
 
 // 퀘스트/퀴즈 데이터 영구 저장에 사용되는 스토리지 키 식별자와 상태 배열들을 선언한다.
 const APP_DATA_KEY = 'questify_app_data_v5';
+const DAY_START_HOUR = 5; // 일일퀘스트가 초기화되는 기준 시각(오전)
+let currentDayKey = getQuestDayKey();
 let todoList = []; let memoStorage = []; let quizStorage = []; let currentActiveQuiz = null; let targetCharIdxForMemo = 0; let editingMemoId = null; let isDraggingTodoItem = false; let isLogView = false; let isGeneratingQuiz = false;
 
 // 문자열에 포함된 XSS 공격 및 이스케이프 문자 파괴를 방지하는 치환 유틸리티 함수이다.
@@ -217,17 +219,60 @@ function loadAppData() {
     const data = localStorage.getItem(APP_DATA_KEY);
     if (data) {
       const parsed = JSON.parse(data); todoList = parsed.todoList || []; quizStorage = parsed.quizStorage || []; memoStorage = parsed.memoStorage || [];
-      const today = new Date().toLocaleDateString();
-      if (parsed.lastDate && parsed.lastDate !== today) {
-        todoList.forEach(t => { if (t.status === 'clear' || t.isHiddenInLog) t.isPastLog = true; if (t.subtasks) { t.subtasks.forEach(s => { if (s.status === 'clear' || s.isHiddenInLog) s.isPastLog = true; }); } });
-        saveAppData();
-      }
+      // 구버전 데이터(dayKey 없음)는 달력 날짜가 바뀐 경우에만 한 번 초기화한다.
+      const savedDayKey = parsed.dayKey || ((parsed.lastDate && parsed.lastDate !== new Date().toLocaleDateString()) ? 'legacy' : currentDayKey);
+      if (savedDayKey !== currentDayKey) { rolloverQuests(); saveAppData(); }
     }
   } catch (e) { }
 }
 
 // 현재 메모리에 상주 중인 퀘스트 및 퀴즈 상태를 문자열화하여 스토리지에 플러시(저장)한다.
-function saveAppData() { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage, memoStorage, lastDate: new Date().toLocaleDateString() })); }
+function saveAppData() { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage, memoStorage, dayKey: currentDayKey })); }
+
+// [하루 기준] 오전 DAY_START_HOUR시에 하루가 바뀐다. 해당 시각 이전은 전날로 취급한다.
+function getQuestDayKey(date = new Date()) {
+  const shifted = new Date(date.getTime() - DAY_START_HOUR * 60 * 60 * 1000);
+  return shifted.getFullYear() + '-' + (shifted.getMonth() + 1) + '-' + shifted.getDate();
+}
+
+// [일일 초기화] 완료한 퀘스트는 지난 기록으로, 미완료 퀘스트는 '미완료' 기록으로 넘기고 오늘 목록을 비운다.
+function rolloverQuests() {
+  const hasTitle = x => x.title && x.title.trim();
+  todoList = todoList.filter(t => t.type !== 'todo' || t.status === 'clear' || hasTitle(t));
+  todoList.forEach(t => {
+    if (t.type !== 'todo') return;
+    t.isEditing = false;
+    if (t.subtasks) t.subtasks = t.subtasks.filter(s => s.status === 'clear' || hasTitle(s));
+    if (t.status === 'clear' || t.isHiddenInLog) { t.isPastLog = true; }
+    else { t.isMissed = true; t.isPastLog = true; }
+    (t.subtasks || []).forEach(s => {
+      s.isEditing = false;
+      if (s.status === 'clear' || s.isHiddenInLog) s.isPastLog = true;
+      else { s.isMissed = true; s.isPastLog = true; }
+    });
+  });
+}
+
+// [미완료 복구] 로그의 미완료 퀘스트를 오늘 목록으로 다시 가져온다.
+window.restoreMissedTodo = function (id) {
+  const t = todoList.find(x => x.id === id);
+  if (!t || !t.isMissed) return;
+  t.isMissed = false; t.isPastLog = false; t.isHiddenInLog = false;
+  (t.subtasks || []).forEach(s => { if (s.isMissed) { s.isMissed = false; s.isPastLog = false; s.isHiddenInLog = false; } });
+  renderAll();
+};
+
+// [날짜 확인] 페이지가 열려 있는 동안에도 하루 기준 시각을 넘기면 초기화한다. 입력/드래그 중이면 다음 확인으로 미룬다.
+function checkDayRollover() {
+  const key = getQuestDayKey();
+  if (key === currentDayKey) return;
+  if (isDraggingTodoItem || todoList.some(t => t.isEditing || (t.subtasks || []).some(s => s.isEditing))) return;
+  currentDayKey = key;
+  rolloverQuests();
+  renderAll();
+}
+setInterval(checkDayRollover, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDayRollover(); });
 
 // 데이터 갱신에 따라 투두 리스트, 퀴즈 저장소, 진행률 및 기타 UI 요소를 전체 리렌더링하는 통합 트리거 함수이다.
 function renderAll() { renderTodoList(); renderStorageList(); updateProgressBar(); saveAppData(); syncExclamations(); if (window.Questify) window.Questify.updateUI(); }
@@ -253,7 +298,7 @@ function renderTodoList() {
   const todos = todoList.filter(item => item.type === 'todo'); let displayTodos = [];
 
   if (isLogView) {
-    displayTodos = todos.filter(item => item.status === 'clear' && !item.isHiddenInLog);
+    displayTodos = todos.filter(item => (item.status === 'clear' || item.isMissed) && !item.isHiddenInLog);
 
     const clearBtn = document.createElement('button');
     clearBtn.className = 'add-card clear-log';
@@ -267,14 +312,14 @@ function renderTodoList() {
     clearBtn.style.WebkitBackdropFilter = 'blur(8px)';
     clearBtn.onclick = () => {
       showCustomConfirm('모든 로그 기록을 비우시겠습니까?\n(경험치 및 오늘의 목표 달성도는 보존됩니다.)', () => {
-        todoList.forEach(item => { if (item.status === 'clear') item.isHiddenInLog = true; if (item.subtasks) { item.subtasks.forEach(s => { if (s.status === 'clear') s.isHiddenInLog = true; }); } });
+        todoList.forEach(item => { if (item.status === 'clear' || item.isMissed) item.isHiddenInLog = true; if (item.subtasks) { item.subtasks.forEach(s => { if (s.status === 'clear' || s.isMissed) s.isHiddenInLog = true; }); } });
         renderAll();
       });
     };
     container.appendChild(clearBtn);
 
   } else {
-    displayTodos = todos.filter(item => item.status !== 'clear');
+    displayTodos = todos.filter(item => item.status !== 'clear' && !item.isMissed);
 
     const addBtn = document.createElement('button');
     addBtn.className = 'add-card';
@@ -335,6 +380,7 @@ function renderTodoList() {
       innerHTML += `<button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'clear')" id="suc" class="mini-btn">✔</button>
                         <button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>X</span></button>`;
     } else {
+      if (item.isMissed) innerHTML += `<span class="subtask-card-clear input" style="margin-right:4px;">미완료</span><button onclick="event.stopPropagation(); restoreMissedTodo(${item.id})" class="mini-btn" title="오늘 목록으로 다시 가져오기">↩</button>`;
       innerHTML += `<button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>X</span></button>`;
     }
     innerHTML += `</div>`;
@@ -895,6 +941,7 @@ function onTimerEnd() {
   if (completionBonus > 0) window.Questify.gainXP(completionBonus, timerSelectedCharIdx);
   updateTimerCharHUD();
   const charAfter = chars[timerSelectedCharIdx]; const levelAfter = charAfter ? charAfter.level : 1; const charName = charAfter ? charAfter.name : '캐릭터';
+  document.getElementById('result-xp-badge').innerText = completionBonus > 0 ? `+${completionBonus} XP 획득!` : '완료 보너스 없음 (1분 미만)';
   document.getElementById('result-char-name').innerText = charName; const lvTextEl = document.getElementById('result-lv-text'); if (levelAfter > levelBefore) { lvTextEl.innerText = `🎉 레벨업! Lv.${levelBefore} ➔ Lv.${levelAfter}`; } else { lvTextEl.innerText = `현재 Lv.${levelAfter}`; } document.getElementById('timer-result-overlay').classList.remove('hidden');
 }
 
@@ -1267,7 +1314,7 @@ document.addEventListener('keydown', function (e) {
 // 시스템 가이드(물음표 호버) UI를 템플릿화하여 동적으로 생성 후 문서 트리에 주입하는 유틸리티이다.
 function initSystemGuide() {
   if (document.getElementById('questify-guide-module')) return;
-  const guideHTML = `    <div id="questify-guide-module" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;">      <div class="guide-tooltip">        <h4>🎮 Questify 시스템 가이드</h4>        <p style="margin-bottom: 10px;">할 일을 달성하고 퀴즈를 풀며 나만의 캐릭터를 성장시키는 방치형 스터디 RPG입니다!</p>        <div class="guide-rewards">          <div style="color: #059669;">📝 하위 퀘스트 완료: <b>모든 캐릭터</b> +5 XP</div>          <div style="color: #2563eb;">🔥 부모 퀘스트 완료: <b>모든 캐릭터</b> +20 XP</div>          <div style="color: #7c3aed;">💡 일반 퀴즈 정답: <b>해당 캐릭터</b> +20 XP</div>          <div style="color: #dc2626;">🎁 돌발(느낌표) 정답: <b>해당 캐릭터</b> +30 XP</div>          <div style="color: #d97706;">⏳ 타이머 유지/완료: <b>해당 캐릭터</b> +5 XP / +50 XP</div>        </div>        <p class="guide-footer">※ 캐릭터 머리 위의 느낌표(!)를 클릭해 문제를 풀어보세요</p>      </div>      <div class="guide-icon">?</div>    </div>  `;
+  const guideHTML = `    <div id="questify-guide-module" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;">      <div class="guide-tooltip">        <h4>🎮 Questify 시스템 가이드</h4>        <p style="margin-bottom: 10px;">할 일을 달성하고 퀴즈를 풀며 나만의 캐릭터를 성장시키는 방치형 스터디 RPG입니다!</p>        <div class="guide-rewards">          <div style="color: #059669;">📝 하위 퀘스트 완료: <b>총 +2 XP</b> (모든 캐릭터에게 균등 분배)</div>          <div style="color: #2563eb;">🔥 부모 퀘스트 완료: <b>총 +10 XP</b> (모든 캐릭터에게 균등 분배)</div>          <div style="color: #7c3aed;">💡 일반 퀴즈 정답: <b>해당 캐릭터</b> +8 XP</div>          <div style="color: #dc2626;">🎁 돌발(느낌표) 정답: <b>해당 캐릭터</b> +12 XP</div>          <div style="color: #d97706;">⏳ 타이머: <b>해당 캐릭터</b> 5초마다 +${TIMER_XP_PER_TICK} XP, 완료 시 진행 1분당 +${TIMER_COMPLETE_BONUS_PER_MIN} XP (최대 +${TIMER_COMPLETE_BONUS_MAX})</div>          <div style="color: #be185d;">👑 왕관: <b>Lv.50 동 · Lv.100 은 · Lv.300 금</b> (만렙 Lv.${window.Questify.MAX_LEVEL})</div>        </div>        <p class="guide-footer">※ 캐릭터 머리 위의 느낌표(!)를 클릭해 문제를 풀어보세요</p>      </div>      <div class="guide-icon">?</div>    </div>  `;
   const styleHTML = `    <style>      #questify-guide-module .guide-tooltip {        display: none; position: absolute; bottom: 35px; left: 0; width: 300px;        background: #fff; border: 3px solid #000; border-radius: 10px; padding: 12px;        box-shadow: 4px -4px 0px #000; font-family: inherit;      }      #questify-guide-module .guide-tooltip h4 {        margin: 0 0 8px 0; font-size: 15px; color: #1e3a8a; font-weight: 900;        border-bottom: 2px dashed #000; padding-bottom: 4px;      }      #questify-guide-module .guide-tooltip p {        margin: 0 0 8px 0; font-size: 12px; line-height: 1.4; color: #374151; font-weight: 800;      }      #questify-guide-module .guide-rewards {        background: #f3f4f6; border: 2px solid #000; border-radius: 6px; padding: 6px;        font-size: 11px; font-weight: 800; display: flex; flex-direction: column; gap: 4px;      }      #questify-guide-module .guide-footer {        margin: 8px 0 0 0 !important; font-size: 10px !important; color: #6b7280 !important;        text-align: center; font-weight: 700 !important;      }      #questify-guide-module .guide-icon { margin-bottom : 45px;      width: 28px; height: 28px; background: #f59e0b; color: #fff; border: 3px solid #000;        border-radius: 50%; display: flex; align-items: center; justify-content: center;        font-weight: 900; font-size: 16px; cursor: help;      }      #questify-guide-module:hover .guide-tooltip, #questify-guide-module.show-guide .guide-tooltip { display: block; }      #questify-guide-module .guide-icon:hover {        background: #d97706; transform: scale(1.1); transition: transform 0.1s ease;      }    </style>  `;
   document.body.insertAdjacentHTML('beforeend', guideHTML + styleHTML);
   const __gm = document.getElementById('questify-guide-module');
