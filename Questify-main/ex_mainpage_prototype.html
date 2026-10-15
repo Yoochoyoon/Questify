@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDY RPG</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root {
+  --px: #000;
+  --bg: #1a1a2e;
+  --panel: #16213e;
+  --panel2: #0f3460;
+  --accent: #e94560;
+  --gold: #ffd700;
+  --green: #00ff41;
+  --blue: #00b4d8;
+  --purple: #7b2d8b;
+  --gray: #4a4a6a;
+  --text: #e8e8e8;
+  --light: #b0b0d0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; image-rendering: pixelated; }
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: var(--bg);
+  height: 100dvh;
+  overflow: hidden;
+  color: var(--text);
+    
+}
+
+/* PIXEL BORDER mixin via outline layers */
+.pix-box {
+  border: 4px solid #000;
+  box-shadow: inset 0 0 0 2px #fff2, 4px 4px 0 #000;
+}
+.pix-btn {
+  font-family: 'Press Start 2P', monospace;
+  border: 3px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  cursor: pointer;
+  transition: transform 0.05s, box-shadow 0.05s;
+  image-rendering: pixelated;
+  letter-spacing: 0;
+}
+.pix-btn:active { transform: translate(3px,3px); box-shadow: 0 0 0 #000; }
+
+#app { display: flex; height: 100dvh; width: 100vw; }
+
+/* === MAIN AREA === */
+#main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; overflow: hidden; }
+
+/* Progress */
+#progress-bar-area {
+  background: var(--panel);
+  border-bottom: 4px solid #000;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+#progress-label { font-size: 7px; color: var(--gold); white-space: nowrap; }
+#progress-track {
+  flex: 1;
+  height: 20px;
+  background: #000;
+  border: 3px solid var(--gray);
+  position: relative;
+  overflow: hidden;
+}
+#progress-track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg, transparent 0, transparent 18px, rgba(0,0,0,0.3) 18px, rgba(0,0,0,0.3) 20px
+  );
+  z-index: 1;
+}
+#progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff41 0%, #00cc33 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  font-size: 7px;
+  color: #000;
+  font-family: 'Press Start 2P', monospace;
+  transition: width 0.4s;
+  min-width: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+/* === GAME VIEW === */
+#game-view {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0d0d1a;
+}
+/* Pixel sky */
+.px-sky {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 58%;
+  background: linear-gradient(180deg, #050520 0%, #0a0a40 40%, #1a0a3a 100%);
+}
+/* Stars */
+.star {
+  position: absolute;
+  width: 3px; height: 3px;
+  background: #fff;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+/* Moon */
+.moon {
+  position: absolute;
+  top: 8%; right: 12%;
+  width: 40px; height: 40px;
+  background: #ffe066;
+  box-shadow: 4px 4px 0 #000;
+  clip-path: polygon(12% 0%,88% 0%,100% 12%,100% 88%,88% 100%,12% 100%,0% 88%,0% 12%);
+}
+/* Ground */
+.px-ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 30%;
+  background: #1a3a1a;
+  border-top: 4px solid #2a6a2a;
+}
+/* Pixel platforms */
+.px-platform {
+  position: absolute;
+  height: 16px;
+  background: #8b4513;
+  border-top: 4px solid #5a8a2a;
+  border-bottom: 4px solid #000;
+  border-left: 4px solid #000;
+  border-right: 4px solid #000;
+  image-rendering: pixelated;
+}
+/* Buildings bg */
+.px-building {
+  position: absolute;
+  bottom: 30%;
+  background: #0d1a2e;
+  border: 3px solid #1a3a5a;
+}
+.px-window {
+  position: absolute;
+  width: 8px; height: 8px;
+  background: #ffe066;
+  box-shadow: 0 0 4px #ffe066;
+}
+/* Character */
+#hero {
+  position: absolute;
+  bottom: 30%;
+  left: 30%;
+  font-size: 52px;
+  animation: hero-float 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px #e94560aa);
+  user-select: none;
+  cursor: pointer;
+}
+@keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+/* HUD overlay */
+.hud-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.7);
+  border: 2px solid var(--gold);
+  padding: 5px 8px;
+  font-size: 7px;
+  color: var(--gold);
+  line-height: 1.8;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* === TIMER VIEW === */
+#timer-view {
+  display: none;
+  flex: 1;
+  background: #0d0d1a;
+  flex-direction: column;
+  padding: 14px;
+  gap: 12px;
+  overflow-y: auto;
+  position: relative;
+}
+#timer-view::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, rgba(0,255,65,0.03) 0, rgba(0,255,65,0.03) 1px, transparent 1px, transparent 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.back-btn {
+  position: absolute;
+  top: 10px; left: 10px;
+  background: #111;
+  color: var(--accent);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 7px 12px;
+  z-index: 10;
+}
+.speech-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 36px;
+  position: relative;
+  z-index: 1;
+}
+.speech-bubble {
+  background: #0a0a20;
+  border: 3px solid var(--green);
+  border-radius: 0;
+  padding: 14px 16px;
+  font-size: 8px;
+  line-height: 2;
+  flex: 1;
+  color: var(--green);
+  box-shadow: 4px 4px 0 #000, 0 0 10px #00ff4133;
+  position: relative;
+}
+.speech-bubble::before {
+  content: '▶';
+  position: absolute;
+  right: -16px;
+  top: 12px;
+  color: var(--green);
+  font-size: 10px;
+}
+.char-avatar-sm {
+  width: 80px; height: 100px;
+  background: #0a0a20;
+  border: 3px solid var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+  flex-shrink: 0;
+  box-shadow: 4px 4px 0 #000, 0 0 12px #00b4d855;
+}
+.timer-box {
+  background: #0a0a20;
+  border: 3px solid var(--gold);
+  padding: 22px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  box-shadow: 4px 4px 0 #000, 0 0 20px #ffd70033;
+  position: relative;
+  z-index: 1;
+}
+.timer-box-title {
+  font-size: 8px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-align: center;
+}
+#timer-display {
+  font-size: clamp(28px, 7vw, 56px);
+  font-weight: bold;
+  letter-spacing: 4px;
+  cursor: pointer;
+  color: var(--green);
+  text-shadow: 0 0 20px #00ff41, 0 0 40px #00ff4166;
+  user-select: none;
+  padding: 4px 8px;
+  background: #000;
+  border: 2px solid var(--green);
+}
+#timer-display input {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(20px, 5vw, 40px);
+  background: #000;
+  color: var(--green);
+  border: none;
+  outline: none;
+  text-align: center;
+  width: 240px;
+  text-shadow: 0 0 10px #00ff41;
+}
+.quick-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.quick-btn {
+  background: #111;
+  color: var(--blue);
+  border: 2px solid var(--blue);
+  border-radius: 0;
+  padding: 8px 18px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #000;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+.quick-btn:active { transform: translate(3px,3px); box-shadow: 0 0; }
+.quick-btn.active { background: var(--blue); color: #000; box-shadow: 3px 3px 0 #000, 0 0 10px var(--blue); }
+#timer-start-btn {
+  background: #003300;
+  color: var(--green);
+  border: 3px solid var(--green);
+  border-radius: 0;
+  padding: 12px 48px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000, 0 0 15px #00ff4155;
+  transition: transform 0.05s, box-shadow 0.05s;
+  letter-spacing: 2px;
+}
+#timer-start-btn:active { transform: translate(4px,4px); box-shadow: 0 0; }
+#timer-start-btn.running { background: #330000; color: var(--accent); border-color: var(--accent); box-shadow: 4px 4px 0 #000, 0 0 15px #e9456055; }
+
+/* === PROBLEM VIEW === */
+#problem-view {
+  display: none;
+  flex: 1;
+  background: #0d0d1a;
+  flex-direction: column;
+  padding: 14px;
+  gap: 12px;
+  overflow-y: auto;
+}
+.prob-form-box {
+  background: #0a0a20;
+  border: 3px solid var(--purple);
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 4px 4px 0 #000;
+  flex: 1;
+}
+.prob-form-box input, .prob-form-box textarea {
+  width: 100%;
+  background: #000;
+  border: 2px solid var(--gray);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 10px 12px;
+  outline: none;
+  resize: none;
+  line-height: 1.8;
+  transition: border-color 0.15s;
+}
+.prob-form-box input:focus, .prob-form-box textarea:focus { border-color: var(--purple); box-shadow: 0 0 8px var(--purple); }
+.prob-form-box textarea { min-height: 65px; overflow-y: auto; }
+.prob-label { font-size: 7px; color: var(--light); }
+#clear-btn {
+  background: #330033;
+  color: #ff44ff;
+  border: 3px solid #ff44ff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  padding: 12px 44px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000, 0 0 15px #ff44ff44;
+  align-self: center;
+  margin-top: auto;
+  transition: transform 0.05s, box-shadow 0.05s;
+  letter-spacing: 1px;
+}
+#clear-btn:active { transform: translate(4px,4px); box-shadow: 0 0; }
+
+/* === TAB STRIP === */
+#tab-strip {
+  width: 30px;
+  background: #0a0a20;
+  border-left: 4px solid #000;
+  border-right: 4px solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+  gap: 2px;
+}
+.tab-btn {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  background: #000;
+  border: 2px solid var(--gray);
+  color: var(--gray);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 14px 4px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  letter-spacing: 2px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.tab-btn.active { background: var(--panel2); color: var(--gold); border-color: var(--gold); box-shadow: 0 0 8px #ffd70055; }
+.tab-btn:hover:not(.active) { background: #111; color: var(--text); border-color: #888; }
+
+/* === RIGHT PANEL === */
+#right-panel {
+  width: 260px;
+  background: var(--panel);
+  border-left: 4px solid #000;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+#panel-header {
+  background: var(--panel2);
+  border-bottom: 4px solid #000;
+  padding: 7px 10px;
+  font-size: 8px;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 1px;
+}
+#tab-content { flex: 1; overflow-y: auto; padding: 8px; min-height: 0; }
+
+/* Scrollbar */
+#tab-content::-webkit-scrollbar { width: 6px; }
+#tab-content::-webkit-scrollbar-track { background: #000; }
+#tab-content::-webkit-scrollbar-thumb { background: var(--gray); }
+
+/* Quest tab */
+.timer-quest-top {
+  background: #1a1a00;
+  border: 3px solid var(--gold);
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  font-size: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 3px 3px 0 #000, 0 0 10px #ffd70033;
+  color: var(--gold);
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+.timer-quest-top:active { transform: translate(3px,3px); box-shadow: 0 0; }
+.timer-quest-top:hover { background: #2a2a00; }
+.section-label {
+  font-size: 7px;
+  color: var(--accent);
+  margin: 8px 0 5px;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 3px;
+  letter-spacing: 1px;
+}
+.quest-item {
+  background: #111;
+  border: 2px solid var(--purple);
+  padding: 7px 8px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 2px 2px 0 #000;
+}
+.quest-item.completed { border-color: var(--gray); opacity: 0.5; }
+.quest-item input.qname {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gray);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  flex: 1;
+  outline: none;
+  padding: 2px;
+}
+.quest-item input.qname::placeholder { color: var(--gray); }
+.chk-btn {
+  background: #000;
+  border: 2px solid var(--green);
+  color: var(--green);
+  width: 20px; height: 20px;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: monospace;
+  box-shadow: 1px 1px 0 #000;
+  transition: transform 0.05s;
+}
+.chk-btn:active { transform: translate(1px,1px); box-shadow: none; }
+.chk-btn.done { border-color: var(--gray); color: var(--gray); }
+.del-btn {
+  background: #000;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  width: 18px; height: 18px;
+  cursor: pointer;
+  font-size: 9px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: monospace;
+  box-shadow: 1px 1px 0 #000;
+}
+.del-btn:active { transform: translate(1px,1px); box-shadow: none; }
+.add-quest-btn {
+  background: #000;
+  border: 2px dashed var(--gray);
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--gray);
+  margin-top: 5px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.add-quest-btn:hover { border-color: var(--green); color: var(--green); }
+
+/* Saved tab */
+.saved-item {
+  background: #111;
+  border: 2px solid var(--blue);
+  padding: 9px 10px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 2px 2px 0 #000;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+.saved-item:hover { background: #1a1a2e; transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #000; }
+.saved-item:active { transform: translate(2px,2px); box-shadow: 0 0; }
+.saved-item .stitle { font-size: 7px; color: var(--text); flex: 1; line-height: 1.6; }
+.badge {
+  background: var(--blue);
+  color: #000;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  padding: 3px 6px;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+.empty-msg { text-align: center; color: var(--gray); margin-top: 24px; font-size: 7px; line-height: 2.5; }
+
+/* Character tab */
+.char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.char-card {
+  background: #000;
+  border: 3px solid var(--gray);
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 90px;
+  font-size: 40px;
+  box-shadow: 3px 3px 0 #000;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+  position: relative;
+}
+.char-card.selected { border-color: var(--gold); box-shadow: 3px 3px 0 #000, 0 0 12px #ffd70066; }
+.char-card:hover { border-color: var(--blue); }
+.char-card:active { transform: translate(3px,3px); box-shadow: 0 0; }
+.char-card .clabel { font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--light); margin-top: 3px; }
+.char-add { font-size: 28px; color: var(--gray); }
+.sel-mark {
+  position: absolute;
+  top: 3px; right: 4px;
+  font-size: 10px;
+  color: var(--gold);
+}
+
+/* Surprise button */
+#surprise-btn {
+  background: #1a0020;
+  color: #ff44ff;
+  border-top: 4px solid #000;
+  border-bottom: 4px solid #000;
+  border-left: none; border-right: none;
+  padding: 12px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  flex-shrink: 0;
+  letter-spacing: 1px;
+  box-shadow: inset 0 0 20px #ff44ff22;
+  transition: background 0.15s;
+  text-shadow: 0 0 10px #ff44ff;
+}
+#surprise-btn:hover { background: #2a0030; box-shadow: inset 0 0 30px #ff44ff33; }
+#surprise-btn:active { box-shadow: inset 0 0 50px #ff44ff55; }
+
+/* Footer char card */
+#char-footer {
+  background: #060616;
+  border-top: 4px solid #000;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+#char-portrait {
+  width: 68px; height: 88px;
+  background: #0a0a20;
+  border: 3px solid var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 42px;
+  flex-shrink: 0;
+  box-shadow: 3px 3px 0 #000, 0 0 10px #00b4d855;
+}
+#char-info { flex: 1; min-width: 0; }
+.cname { font-size: 8px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clv { font-size: 7px; color: var(--green); margin: 3px 0; }
+.xp-track {
+  background: #000;
+  border: 2px solid var(--gray);
+  height: 10px;
+  margin: 4px 0;
+}
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff41, #00cc33);
+  box-shadow: 0 0 6px #00ff41;
+  transition: width 0.4s;
+}
+.xp-lbl { font-size: 6px; color: var(--gray); }
+#dday-box {
+  background: #0a0a20;
+  border: 3px solid var(--accent);
+  padding: 6px 8px;
+  text-align: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-width: 58px;
+  box-shadow: 3px 3px 0 #000, 0 0 10px #e9456044;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+#dday-box:hover { background: #1a0010; }
+#dday-box:active { transform: translate(3px,3px); box-shadow: 0 0; }
+.dd-lbl { font-size: 6px; color: var(--accent); margin-bottom: 2px; }
+.dd-num { font-size: 14px; font-weight: bold; color: var(--accent); line-height: 1.3; text-shadow: 0 0 8px var(--accent); }
+.dd-sub { font-size: 6px; color: var(--light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 56px; margin-top: 2px; }
+
+/* === MODALS === */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.overlay.show { display: flex; }
+.mbox {
+  background: #0a0a20;
+  border: 4px solid var(--gold);
+  padding: 22px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  max-height: 90dvh;
+  overflow-y: auto;
+  box-shadow: 6px 6px 0 #000, 0 0 30px #ffd70044;
+}
+.mbox h3 { font-size: 10px; color: var(--gold); margin-bottom: 14px; letter-spacing: 1px; }
+.mclose {
+  position: absolute;
+  top: 10px; right: 12px;
+  background: #000;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: monospace;
+  font-weight: bold;
+  box-shadow: 2px 2px 0 #000;
+}
+.mclose:active { transform: translate(2px,2px); box-shadow: none; }
+.qblock {
+  background: #000;
+  border: 2px solid var(--gray);
+  padding: 12px;
+  font-size: 8px;
+  line-height: 2;
+  color: var(--text);
+  white-space: pre-wrap;
+  margin-bottom: 10px;
+}
+.ablock {
+  background: #001a00;
+  border: 2px solid var(--green);
+  padding: 12px;
+  font-size: 8px;
+  line-height: 2;
+  color: var(--green);
+  white-space: pre-wrap;
+  display: none;
+  margin-top: 8px;
+  box-shadow: 0 0 10px #00ff4133;
+}
+.mbox textarea {
+  width: 100%;
+  background: #000;
+  border: 2px solid var(--gray);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 10px;
+  outline: none;
+  resize: none;
+  height: 80px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+.mbox textarea:focus { border-color: var(--purple); }
+.mbox input[type=text], .mbox input[type=date] {
+  width: 100%;
+  background: #000;
+  border: 2px solid var(--gray);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 10px;
+  outline: none;
+  margin-bottom: 10px;
+}
+.mbox input:focus { border-color: var(--blue); }
+.mbtn {
+  background: #000;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 10px 22px;
+  cursor: pointer;
+  border: 3px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  transition: transform 0.05s, box-shadow 0.05s;
+  letter-spacing: 1px;
+}
+.mbtn:active { transform: translate(3px,3px); box-shadow: 0 0; }
+.mbtn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.mbtn-yellow { background: #1a1a00; color: var(--gold); border-color: var(--gold); box-shadow: 3px 3px 0 #000, 0 0 8px #ffd70033; }
+.mbtn-blue { background: #001a2e; color: var(--blue); border-color: var(--blue); box-shadow: 3px 3px 0 #000, 0 0 8px #00b4d833; }
+.mbtn-gray { background: #111; color: var(--gray); border-color: var(--gray); }
+
+/* Pixel cursor blink */
+@keyframes cursor { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* === MOBILE === */
+@media (max-width: 640px) {
+  #app { flex-direction: column; }
+  #main-area { height: 46dvh; flex-shrink: 0; }
+  #tab-strip { flex-direction: row; width: 100%; height: 28px; border-left: none; border-right: none; border-top: 4px solid #000; }
+  .tab-btn { writing-mode: horizontal-tb; flex: 1; padding: 4px 2px; font-size: 6px; letter-spacing: 0; border: none; border-right: 2px solid var(--gray); }
+  .tab-btn:last-child { border-right: none; }
+  #right-panel { width: 100%; flex: 1; min-height: 0; border-left: none; }
+  #char-footer { padding: 6px; }
+  #char-portrait { width: 58px; height: 78px; font-size: 36px; }
+  .dd-num { font-size: 12px; }
+  .timer-box { padding: 16px 12px; gap: 12px; }
+  #timer-view, #problem-view { padding: 10px; gap: 10px; }
+  .speech-bubble { font-size: 7px; padding: 10px 12px; }
+  .char-avatar-sm { width: 68px; height: 84px; font-size: 40px; }
+  .cname { font-size: 7px; }
+}
+
+/* Pixel grid overlay on game */
+#game-view::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+  background-size: 8px 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MAIN AREA -->
+  <div id="main-area">
+    <div id="progress-bar-area">
+      <span id="progress-label">EXP</span>
+      <div id="progress-track">
+        <div id="progress-fill" style="width:66.7%">2/3</div>
+      </div>
+    </div>
+    
+    
+
+    <!-- GAME VIEW -->
+    <div id="game-view">
+      <div class="px-sky"></div>
+      <div class="moon"></div>
+      <!-- Stars -->
+      <div class="star" style="top:6%;left:10%;animation-delay:0.2s"></div>
+      <div class="star" style="top:15%;left:25%;animation-delay:0.8s"></div>
+      <div class="star" style="top:5%;left:50%;animation-delay:0.4s"></div>
+      <div class="star" style="top:20%;left:68%;animation-delay:1.2s;width:4px;height:4px"></div>
+      <div class="star" style="top:10%;left:82%;animation-delay:0.6s"></div>
+      <div class="star" style="top:25%;right:30%;animation-delay:1s"></div>
+      <!-- Buildings -->
+      <div class="px-building" style="left:5%;width:50px;height:90px;">
+        <div class="px-window" style="top:10px;left:8px"></div>
+        <div class="px-window" style="top:10px;right:8px"></div>
+        <div class="px-window" style="top:28px;left:8px;background:#555;box-shadow:none"></div>
+        <div class="px-window" style="top:28px;right:8px"></div>
+        <div class="px-window" style="top:46px;left:8px"></div>
+        <div class="px-window" style="top:46px;right:8px;background:#555;box-shadow:none"></div>
+      </div>
+      <div class="px-building" style="left:18%;width:35px;height:65px;">
+        <div class="px-window" style="top:8px;left:6px"></div>
+        <div class="px-window" style="top:24px;left:6px;background:#555;box-shadow:none"></div>
+        <div class="px-window" style="top:40px;left:6px"></div>
+      </div>
+      <div class="px-building" style="right:5%;width:55px;height:100px;">
+        <div class="px-window" style="top:10px;left:8px;background:#555;box-shadow:none"></div>
+        <div class="px-window" style="top:10px;right:8px"></div>
+        <div class="px-window" style="top:28px;left:8px"></div>
+        <div class="px-window" style="top:28px;right:8px"></div>
+        <div class="px-window" style="top:46px;left:8px"></div>
+        <div class="px-window" style="top:46px;right:8px;background:#555;box-shadow:none"></div>
+        <div class="px-window" style="top:64px;left:8px;background:#555;box-shadow:none"></div>
+        <div class="px-window" style="top:64px;right:8px"></div>
+      </div>
+      <div class="px-building" style="right:20%;width:38px;height:72px;">
+        <div class="px-window" style="top:8px;left:6px"></div>
+        <div class="px-window" style="top:24px;left:6px"></div>
+        <div class="px-window" style="top:40px;left:6px;background:#555;box-shadow:none"></div>
+      </div>
+      <!-- Platforms -->
+      <div class="px-platform" style="top:24%;left:8%;width:90px;"></div>
+      <div class="px-platform" style="top:18%;left:38%;width:70px;"></div>
+      <div class="px-platform" style="top:28%;right:12%;width:80px;"></div>
+      <div class="px-ground"></div>
+      <!-- Character -->
+      <div id="hero">🐱</div>
+      <!-- HUD -->
+      <div class="hud-badge">
+        HP ██████████ 100<br>
+        MP ████████░░  80<br>
+        LV &nbsp;88
+      </div>
+    </div>
+
+    <!-- TIMER VIEW -->
+    <div id="timer-view">
+      <button class="back-btn pix-btn" onclick="goBack()">◀ BACK</button>
+      <div class="speech-row">
+        <div class="speech-bubble" id="timer-speech">집중하는 동안<br>밖에 나가면<br>실패다냥!</div>
+        <div class="char-avatar-sm" id="timer-avatar">🐱</div>
+      </div>
+      <div class="timer-box">
+        <div class="timer-box-title">- TIMER -</div>
+        <div id="timer-display" onclick="startEdit(event)">00:01:00</div>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="setQuick(this,30)">30m</button>
+          <button class="quick-btn" onclick="setQuick(this,60)">1h</button>
+          <button class="quick-btn" onclick="setQuick(this,180)">3h</button>
+        </div>
+        <button id="timer-start-btn" onclick="toggleTimer()">▶ START</button>
+      </div>
+    </div>
+
+    <!-- PROBLEM VIEW -->
+    <div id="problem-view">
+      <button class="back-btn pix-btn" onclick="goBackFromProblem()">SKIP ▶</button>
+      <div class="speech-row" style="margin-top:36px;">
+        <div class="speech-bubble">문제를 만들면<br>클리어다냥!<br>정리해봐~</div>
+        <div class="char-avatar-sm" id="prob-avatar">🐱</div>
+      </div>
+      <div class="prob-form-box">
+        <div class="prob-label">▸ 제목</div>
+        <input type="text" id="prob-title" placeholder="제목 입력">
+        <div class="prob-label">▸ 문제</div>
+        <textarea id="prob-question" placeholder="문제를 입력하세요..." oninput="autoResize(this)"></textarea>
+        <div class="prob-label">▸ 정답</div>
+        <textarea id="prob-answer" placeholder="정답을 입력하세요..." oninput="autoResize(this)"></textarea>
+        <button id="clear-btn" onclick="saveProblem()">✦ CLEAR ✦</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB STRIP -->
+  <div id="tab-strip">
+    <button class="tab-btn active" id="tab-quest" onclick="switchTab('quest')">퀘스트</button>
+    <button class="tab-btn" id="tab-saved" onclick="switchTab('saved')">저장문제</button>
+    <button class="tab-btn" id="tab-character" onclick="switchTab('character')">캐릭터</button>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div id="panel-header" id="panel-header-title">≡ QUEST LOG ≡</div>
+    <div id="tab-content">
+      <!-- Quest Tab -->
+      <div id="qt-quest">
+        <div class="timer-quest-top" onclick="startTimerChallenge()">⚔ 타이머 챌린지! <span>▶</span></div>
+        <div class="section-label">■ 진행중</div>
+        <div id="quest-list"></div>
+        <div class="add-quest-btn" onclick="addQuest()">[ + 퀘스트 추가 ]</div>
+      </div>
+      <!-- Saved Tab -->
+      <div id="qt-saved" style="display:none">
+        <div class="section-label">■ 저장된 문제</div>
+        <div id="saved-list"></div>
+        <div id="no-saved-msg" class="empty-msg">
+          저장된 문제 없음<br><br>
+          타이머 챌린지로<br>문제를 만들어보세요
+        </div>
+      </div>
+      <!-- Character Tab -->
+      <div id="qt-character" style="display:none">
+        <div class="section-label">■ 캐릭터 선택</div>
+        <div class="char-grid" id="char-grid"></div>
+      </div>
+    </div>
+
+    <button id="surprise-btn" onclick="surpriseQuest()">★ 돌발 퀘스트!! ★</button>
+
+    <div id="char-footer">
+      <div id="char-portrait">🐱</div>
+      <div id="char-info">
+        <div class="cname" id="cname-disp">KITTY</div>
+        <div class="clv">Lv.88</div>
+        <div class="xp-track"><div class="xp-fill" style="width:40%"></div></div>
+        <div class="xp-lbl">XP: 400/1000</div>
+      </div>
+      <div id="dday-box" onclick="openDdayModal()">
+        <div class="dd-lbl">D-DAY</div>
+        <div class="dd-num" id="dday-num-el">D-88</div>
+        <div class="dd-sub" id="dday-sub-el">시험시작</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SURPRISE QUEST MODAL -->
+<div class="overlay" id="m-surprise">
+  <div class="mbox">
+    <button class="mclose" onclick="closeM('m-surprise')">✕</button>
+    <h3>★ 돌발 퀘스트! ★</h3>
+    <div style="font-size:8px;color:var(--blue);margin-bottom:10px;" id="surp-title"></div>
+    <div class="qblock" id="surp-q"></div>
+    <textarea id="surp-inp" placeholder="답을 입력해보세요..."></textarea>
+    <div class="mbtn-row">
+      <button class="mbtn mbtn-blue" onclick="revealSurpAns()">▶ 정답확인</button>
+      <button class="mbtn mbtn-gray" onclick="closeM('m-surprise')">닫기</button>
+    </div>
+    <div class="ablock" id="surp-ans"></div>
+  </div>
+</div>
+
+<!-- PROBLEM DETAIL MODAL -->
+<div class="overlay" id="m-detail">
+  <div class="mbox">
+    <button class="mclose" onclick="closeM('m-detail')">✕</button>
+    <h3 id="det-title"></h3>
+    <div class="qblock" id="det-q"></div>
+    <div class="mbtn-row">
+      <button class="mbtn mbtn-blue" onclick="toggleAns()">▶ 정답보기</button>
+      <button class="mbtn mbtn-gray" onclick="closeM('m-detail')">닫기</button>
+    </div>
+    <div class="ablock" id="det-ans"></div>
+  </div>
+</div>
+
+<!-- DDAY MODAL -->
+<div class="overlay" id="m-dday">
+  <div class="mbox">
+    <button class="mclose" onclick="closeM('m-dday')">✕</button>
+    <h3>■ D-DAY 설정</h3>
+    <input type="text" id="dday-lbl-inp" placeholder="이름 (예: 기말고사)">
+    <input type="date" id="dday-date-inp">
+    <div class="mbtn-row">
+      <button class="mbtn mbtn-yellow" onclick="saveDday()">▶ 저장</button>
+      <button class="mbtn mbtn-gray" onclick="closeM('m-dday')">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let quests=[
+  {id:1,name:'예시 퀘스트 1',done:false},
+  {id:2,name:'예시 퀘스트 2',done:false}
+];
+let nqid=3, saved=[], selChar=0, curTab='quest', curView='game';
+let timerSec=60, timerInt=null, timerOn=false;
+let ddayDate=null, ddayLabel='시험시작';
+
+const CHARS=[
+  {em:'🐱',name:'KITTY'},
+  {em:'🐰',name:'RABBIT'},
+  {em:'🐸',name:'FROGGER'},
+  {em:'🦊',name:'FOXIE'},
+];
+
+const PANEL_TITLES={quest:'≡ QUEST LOG ≡',saved:'≡ SAVED DATA ≡',character:'≡ CHARACTER ≡'};
+
+renderQuests(); renderSaved(); renderCharGrid(); updateFooter();
+
+function switchTab(t){
+  curTab=t;
+  ['quest','saved','character'].forEach(x=>{
+    document.getElementById('qt-'+x).style.display=x===t?'block':'none';
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+  });
+  document.getElementById('panel-header').textContent=PANEL_TITLES[t];
+  if(t==='saved') renderSaved();
+}
+
+function switchView(v){
+  curView=v;
+  document.getElementById('game-view').style.display=v==='game'?'block':'none';
+  document.getElementById('timer-view').style.display=v==='timer'?'flex':'none';
+  document.getElementById('problem-view').style.display=v==='problem'?'flex':'none';
+  document.getElementById('progress-bar-area').style.display=v==='game'?'flex':'none';
+}
+
+function goBack(){if(timerOn)stopTimer();switchView('game');}
+function goBackFromProblem(){switchView('game');}
+
+function renderQuests(){
+  const el=document.getElementById('quest-list');
+  el.innerHTML='';
+  const active=quests.filter(q=>!q.done);
+  const done=quests.filter(q=>q.done);
+  if(done.length){
+    const lbl=document.createElement('div');
+    lbl.className='section-label';
+    lbl.style.cssText='margin-top:8px;color:#555;border-color:#555';
+    lbl.textContent='■ 완료';
+    el.appendChild(lbl);
+  }
+  [...active,...done].forEach(q=>{
+    const d=document.createElement('div');
+    d.className='quest-item'+(q.done?' completed':'');
+    if(!q.done) d.style.order='0'; else d.style.order='1';
+    d.innerHTML=`<input class="qname" value="${escH(q.name)}" placeholder="퀘스트 이름"
+      onchange="renameQ(${q.id},this.value)">
+      <button class="chk-btn${q.done?' done':''}" onclick="toggleQ(${q.id})">✓</button>
+      <button class="del-btn" onclick="delQ(${q.id})">✕</button>`;
+    el.appendChild(d);
+  });
+  updateProgress();
+}
+function addQuest(){quests.push({id:nqid++,name:'NEW QUEST',done:false});renderQuests();}
+function toggleQ(id){const q=quests.find(x=>x.id===id);if(q)q.done=!q.done;renderQuests();}
+function delQ(id){quests=quests.filter(x=>x.id!==id);renderQuests();}
+function renameQ(id,v){const q=quests.find(x=>x.id===id);if(q)q.name=v;}
+function updateProgress(){
+  const t=quests.length,d=quests.filter(q=>q.done).length;
+  const pct=t>0?(d/t*100):0;
+  const el=document.getElementById('progress-fill');
+  el.style.width=Math.max(pct,4)+'%';
+  el.textContent=d+'/'+t;
+}
+
+function fmt(s){return[Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(n=>String(n).padStart(2,'0')).join(':');}
+
+function setQuick(btn,min){
+  timerSec=min*60;
+  document.getElementById('timer-display').textContent=fmt(timerSec);
+  document.querySelectorAll('.quick-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(timerOn)stopTimer();
+}
+
+function startEdit(e){
+  if(timerOn)return;
+  const disp=document.getElementById('timer-display');
+  const cur=disp.textContent;
+  disp.innerHTML=`<input id="tedit" type="text" value="${cur}" maxlength="8" placeholder="HH:MM:SS">`;
+  const inp=document.getElementById('tedit');
+  inp.focus();inp.select();
+  inp.addEventListener('blur',doneEdit);
+  inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();});
+}
+function doneEdit(){
+  const inp=document.getElementById('tedit');if(!inp)return;
+  const parts=inp.value.trim().split(':').map(Number);
+  let s=0;
+  if(parts.length===3)s=parts[0]*3600+parts[1]*60+(parts[2]||0);
+  else if(parts.length===2)s=parts[0]*60+(parts[1]||0);
+  else s=parts[0]||0;
+  timerSec=Math.max(1,s);
+  document.getElementById('timer-display').textContent=fmt(timerSec);
+}
+
+function toggleTimer(){timerOn?stopTimer():startTimer();}
+function startTimer(){
+  timerOn=true;
+  const btn=document.getElementById('timer-start-btn');
+  btn.textContent='■ STOP';btn.classList.add('running');
+  timerInt=setInterval(()=>{
+    timerSec--;
+    document.getElementById('timer-display').textContent=fmt(timerSec);
+    if(timerSec<=0){stopTimer();setTimeout(()=>switchView('problem'),400);}
+  },1000);
+}
+function stopTimer(){
+  clearInterval(timerInt);timerOn=false;
+  const btn=document.getElementById('timer-start-btn');
+  btn.textContent='▶ START';btn.classList.remove('running');
+}
+
+function startTimerChallenge(){switchView('timer');}
+
+function saveProblem(){
+  const ti=document.getElementById('prob-title').value.trim();
+  const q=document.getElementById('prob-question').value.trim();
+  const a=document.getElementById('prob-answer').value.trim();
+  if(!ti&&!q){alert('제목과 문제를 입력해주세요!');return;}
+  saved.push({title:ti||'(NO TITLE)',q,a});
+  ['prob-title','prob-question','prob-answer'].forEach(id=>{
+    const el=document.getElementById(id);el.value='';el.style.height='';
+  });
+  renderSaved();switchView('game');switchTab('saved');
+}
+function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+
+function renderSaved(){
+  const list=document.getElementById('saved-list');
+  const msg=document.getElementById('no-saved-msg');
+  list.innerHTML='';
+  if(!saved.length){msg.style.display='block';return;}
+  msg.style.display='none';
+  saved.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='saved-item';
+    d.innerHTML=`<span class="stitle">${escH(p.title)}</span><span class="badge">▶PLAY</span>`;
+    d.onclick=()=>openDetail(i);
+    list.appendChild(d);
+  });
+}
+function openDetail(i){
+  const p=saved[i];
+  document.getElementById('det-title').textContent=p.title;
+  document.getElementById('det-q').textContent=p.q||'(문제 없음)';
+  document.getElementById('det-ans').textContent=p.a||'(정답 없음)';
+  document.getElementById('det-ans').style.display='none';
+  document.querySelector('#m-detail .mbtn-blue').textContent='▶ 정답보기';
+  openM('m-detail');
+}
+function toggleAns(){
+  const el=document.getElementById('det-ans');
+  const btn=document.querySelector('#m-detail .mbtn-blue');
+  const show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  btn.textContent=show?'▼ 숨기기':'▶ 정답보기';
+}
+
+function surpriseQuest(){
+  if(!saved.length){alert('저장된 문제 없음!\n타이머 챌린지로 문제를 만드세요.');return;}
+  const p=saved[Math.floor(Math.random()*saved.length)];
+  document.getElementById('surp-title').textContent='[ '+p.title+' ]';
+  document.getElementById('surp-q').textContent=p.q||'(문제 없음)';
+  document.getElementById('surp-ans').textContent='▶ 정답: '+(p.a||'(정답 없음)');
+  document.getElementById('surp-ans').style.display='none';
+  document.getElementById('surp-inp').value='';
+  openM('m-surprise');
+}
+function revealSurpAns(){document.getElementById('surp-ans').style.display='block';}
+
+function renderCharGrid(){
+  const g=document.getElementById('char-grid');g.innerHTML='';
+  CHARS.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='char-card'+(i===selChar?' selected':'');
+    d.innerHTML=`${i===selChar?'<span class="sel-mark">★</span>':''}
+      <span>${c.em}</span><span class="clabel">${c.name}</span>`;
+    d.onclick=()=>selectChar(i);
+    g.appendChild(d);
+  });
+  const add=document.createElement('div');
+  add.className='char-card char-add';
+  add.innerHTML='<span>+</span><span class="clabel">SOON</span>';
+  add.onclick=()=>alert('NEW CHARACTER\nCOMING SOON...');
+  g.appendChild(add);
+}
+function selectChar(i){selChar=i;renderCharGrid();updateFooter();}
+function updateFooter(){
+  const c=CHARS[selChar];
+  document.getElementById('char-portrait').textContent=c.em;
+  document.getElementById('cname-disp').textContent=c.name;
+  document.getElementById('timer-avatar').textContent=c.em;
+  document.getElementById('prob-avatar').textContent=c.em;
+  document.getElementById('hero').textContent=c.em;
+}
+
+function openDdayModal(){
+  document.getElementById('dday-date-inp').value=ddayDate||new Date().toISOString().split('T')[0];
+  document.getElementById('dday-lbl-inp').value=ddayLabel==='시험시작'?'':ddayLabel;
+  openM('m-dday');
+}
+function saveDday(){
+  const d=document.getElementById('dday-date-inp').value;
+  const l=document.getElementById('dday-lbl-inp').value.trim();
+  if(!d){alert('날짜를 선택해주세요!');return;}
+  ddayDate=d;ddayLabel=l||'시험시작';
+  updateDday();closeM('m-dday');
+}
+function updateDday(){
+  if(!ddayDate)return;
+  const now=new Date();now.setHours(0,0,0,0);
+  const tgt=new Date(ddayDate);tgt.setHours(0,0,0,0);
+  const diff=Math.round((tgt-now)/864e5);
+  document.getElementById('dday-num-el').textContent=diff>=0?'D-'+diff:'D+'+Math.abs(diff);
+  document.getElementById('dday-sub-el').textContent=ddayLabel;
+}
+
+function openM(id){document.getElementById(id).classList.add('show');}
+function closeM(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.querySelector('.overlay.show')){
+      document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show'));
+    } else if(curView!=='game'){
+      if(timerOn)stopTimer();switchView('game');
+    }
+  }
+});
+</script>
+</body>
+</html>
