@@ -2166,6 +2166,27 @@
       word-break: break-all;
     }
 
+    /* 마크다운 메모: 접힌 상태는 한 줄 미리보기, 펼치면 렌더링된 본문을 보여준다. */
+    .memo-text .memo-md { display: none; }
+    .memo-text.expanded .memo-plain { display: none; }
+    .memo-text.expanded .memo-md { display: block; white-space: normal; word-break: break-word; }
+    .memo-md > :first-child { margin-top: 0; }
+    .memo-md > :last-child { margin-bottom: 0; }
+    .memo-md h1, .memo-md h2, .memo-md h3, .memo-md h4 { margin: 8px 0 4px; line-height: 1.3; }
+    .memo-md h1 { font-size: 18px; }
+    .memo-md h2 { font-size: 16px; }
+    .memo-md h3, .memo-md h4 { font-size: 14px; }
+    .memo-md p { margin: 4px 0; }
+    .memo-md ul, .memo-md ol { margin: 4px 0; padding-left: 20px; }
+    .memo-md code { background: rgba(0, 0, 0, 0.08); border-radius: 3px; padding: 0 4px; font-family: monospace; }
+    .memo-md pre { background: rgba(0, 0, 0, 0.08); border-radius: 6px; padding: 8px; overflow-x: auto; white-space: pre; }
+    .memo-md pre code { background: none; padding: 0; }
+    .memo-md blockquote { margin: 4px 0; padding-left: 8px; border-left: 3px solid #999; color: #555; }
+    .memo-md table { border-collapse: collapse; margin: 4px 0; }
+    .memo-md th, .memo-md td { border: 1px solid #000; padding: 2px 6px; }
+    .memo-md a { color: #2563eb; text-decoration: underline; }
+    .memo-md img { max-width: 100%; }
+
     .xp-floating-text {
       position: absolute;
       top: -35px;

@@ -185,7 +185,7 @@
         <h2 style="text-align:center; margin-top:0;">학습 메모장</h2>
         <div style="font-size:12px; color:#4b5563; margin-bottom:8px; text-align:center;"
           id="notepad-target-char-label"></div>
-        <textarea id="input-notepad-content" class="area" placeholder="공부한 내용을 이곳에 메모하세요! (줄바꿈: Enter, 저장 및 창 닫기: Esc)"
+        <textarea id="input-notepad-content" class="area" placeholder="공부한 내용을 이곳에 메모하세요! (줄바꿈: Enter, 저장 및 창 닫기: Esc)&#10;서식도 쓸 수 있어요: # 제목, - 목록, **굵게**"
           onkeydown="if(event.key==='Escape'){ event.preventDefault(); window.submitNotepad(); }"></textarea>
         <button id="btn-submit-notepad" class="submit-btn" style="background:#59A3F8; margin-top:auto;">저장</button>
       </div>
@@ -296,6 +296,8 @@
     </div>
   </div>
 
+<script src="lib/marked.min.js"></script>
+<script src="lib/purify.min.js"></script>
 <script src="script.js"></script>
 
 </body>
