@@ -167,7 +167,7 @@
               <input type="checkbox" id="quiz-type-multiple" value="multiple" checked> 객관식
             </label>
             <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-              <input type="checkbox" id="quiz-type-short" value="short" checked> 주관식 단답형
+              <input type="checkbox" id="quiz-type-short" value="short" checked> 주관식 서술형
             </label>
           </div>
         </div>
@@ -197,8 +197,8 @@
         <div id="solve-quiz-content" class="fake-field" tabindex="0">문제 내용</div>
         <div id="solve-input-state" style="display:flex; flex-direction:column; gap:12px;">
           <!-- 주관식 입력 필드이다. 엔터 입력 시 자동 채점 트리거를 발생시킨다. -->
-          <textarea id="input-solve-answer" class="field" placeholder="정답을 적어주세요 (엔터 시 채점)"
-            onkeydown="if(event.key==='Enter' && !event.isComposing){ event.preventDefault(); this.blur(); document.getElementById('btn-grade-problem').click(); }"></textarea>
+          <textarea id="input-solve-answer" class="field" placeholder="답을 서술해 주세요 (Shift+Enter: 줄바꿈, Enter: 채점)"
+            onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing){ event.preventDefault(); this.blur(); document.getElementById('btn-grade-problem').click(); }"></textarea>
 
           <!-- O/X 문제 해결을 위한 버튼 영역이다. 조건부 렌더링으로 표시/숨김 처리된다. -->
           <!-- O/X 버튼 크기 조정 및 색상 변경 반영 -->
