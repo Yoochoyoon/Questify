@@ -436,7 +436,6 @@ function renderTodoList() {
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'clear')" id="suc" class="mini-btn">✔</button>
                           <button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px;">X</button>`;
         } else if (!isLogView && sub.status === 'clear') {
-          subHTML += `<span class="subtask-card-clear input">완료</span>`;
           if (!sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px; margin-left:4px;">X</button>`;
         } else if (isLogView) {
