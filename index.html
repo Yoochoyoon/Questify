@@ -125,8 +125,15 @@
 
       <!-- AI가 생성한 퀴즈 문제 목록을 저장 및 제공하는 패널 영역이다. -->
       <div id="panel-storage" class="panel-view hidden">
-        <h1 class="panel-title">퀴즈퀘스트</h1>
+        <div style="position: relative;">
+          <div style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); z-index: 10;">
+            <button id="btn-toggle-wrong" class="mini-btn" style="margin: 0;">오답노트</button>
+          </div>
+          <h1 class="panel-title" id="storage-panel-title">퀴즈퀘스트</h1>
+        </div>
         <div id="storage-list-container" class="list"></div>
+        <!-- 틀린 문제의 정답을 확인하면 모이는 오답노트 목록이다. -->
+        <div id="wrong-list-container" class="list hidden"></div>
       </div>
 
       <!-- 타이머 스크린을 오버레이로 호출하기 위한 진입점 버튼이다. -->

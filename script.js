@@ -204,7 +204,7 @@ modalOverlay.addEventListener('click', (e) => {
 const APP_DATA_KEY = 'questify_app_data_v5';
 const DAY_START_HOUR = 5; // 일일퀘스트가 초기화되는 기준 시각(오전)
 let currentDayKey = getQuestDayKey();
-let todoList = []; let memoStorage = []; let quizStorage = []; let currentActiveQuiz = null; let targetCharIdxForMemo = 0; let editingMemoId = null; let isDraggingTodoItem = false; let isLogView = false; let isGeneratingQuiz = false;
+let todoList = []; let memoStorage = []; let quizStorage = []; let wrongStorage = []; let isWrongView = false; let currentActiveQuiz = null; let targetCharIdxForMemo = 0; let editingMemoId = null; let isDraggingTodoItem = false; let isLogView = false; let isGeneratingQuiz = false;
 
 // 문자열에 포함된 XSS 공격 및 이스케이프 문자 파괴를 방지하는 치환 유틸리티 함수이다.
 function escapeHTML(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char])); }
@@ -218,7 +218,7 @@ function loadAppData() {
   try {
     const data = localStorage.getItem(APP_DATA_KEY);
     if (data) {
-      const parsed = JSON.parse(data); todoList = parsed.todoList || []; quizStorage = parsed.quizStorage || []; memoStorage = parsed.memoStorage || [];
+      const parsed = JSON.parse(data); todoList = parsed.todoList || []; quizStorage = parsed.quizStorage || []; memoStorage = parsed.memoStorage || []; wrongStorage = parsed.wrongStorage || [];
       // 구버전 데이터(dayKey 없음)는 달력 날짜가 바뀐 경우에만 한 번 초기화한다.
       const savedDayKey = parsed.dayKey || ((parsed.lastDate && parsed.lastDate !== new Date().toLocaleDateString()) ? 'legacy' : currentDayKey);
       if (savedDayKey !== currentDayKey) { rolloverQuests(); saveAppData(); }
@@ -227,7 +227,7 @@ function loadAppData() {
 }
 
 // 현재 메모리에 상주 중인 퀘스트 및 퀴즈 상태를 문자열화하여 스토리지에 플러시(저장)한다.
-function saveAppData() { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage, memoStorage, dayKey: currentDayKey })); }
+function saveAppData() { localStorage.setItem(APP_DATA_KEY, JSON.stringify({ todoList, quizStorage, memoStorage, wrongStorage, dayKey: currentDayKey })); }
 
 // [하루 기준] 오전 DAY_START_HOUR시에 하루가 바뀐다. 해당 시각 이전은 전날로 취급한다.
 function getQuestDayKey(date = new Date()) {
@@ -275,7 +275,7 @@ setInterval(checkDayRollover, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDayRollover(); });
 
 // 데이터 갱신에 따라 투두 리스트, 퀴즈 저장소, 진행률 및 기타 UI 요소를 전체 리렌더링하는 통합 트리거 함수이다.
-function renderAll() { renderTodoList(); renderStorageList(); updateProgressBar(); saveAppData(); syncExclamations(); if (window.Questify) window.Questify.updateUI(); }
+function renderAll() { renderTodoList(); renderStorageList(); renderWrongList(); updateProgressBar(); saveAppData(); syncExclamations(); if (window.Questify) window.Questify.updateUI(); }
 
 // [로그] 버튼 클릭 시 현재 뷰 모드를 일일 퀘스트 모드와 지난 기록(로그) 모드 사이에서 스위칭한다.
 document.getElementById('btn-toggle-log').addEventListener('click', () => {
@@ -847,8 +847,45 @@ function setupSolveModal(quiz, isSurprise) {
   openSpecificModal('solve-modal');
 }
 
+// [오답노트] 정답을 확인한(포기한) 문제를 오답노트에 저장한다. 같은 캐릭터의 같은 문제가 이미 있으면 틀린 횟수만 올린다.
+function recordWrongAnswer(quiz, userAnswer, explanation) {
+  if (!quiz || quiz.fromWrong) {
+    const w = quiz && wrongStorage.find(x => x.id === quiz.id);
+    if (w) { w.wrongCount = (w.wrongCount || 1) + 1; w.userAnswer = String(userAnswer); w.date = new Date().toLocaleDateString(); saveAppData(); }
+    return;
+  }
+  const dup = wrongStorage.find(w => w.charIdx === quiz.charIdx && w.content === quiz.content);
+  if (dup) { dup.wrongCount = (dup.wrongCount || 1) + 1; dup.userAnswer = String(userAnswer); dup.date = new Date().toLocaleDateString(); }
+  else wrongStorage.push({ id: uid(), title: quiz.title, content: quiz.content, options: quiz.options || [], answer: quiz.answer, keyPoints: quiz.keyPoints || [], explanation: explanation || quiz.explanation || '', type: quiz.type, charIdx: quiz.charIdx, userAnswer: String(userAnswer), wrongCount: 1, date: new Date().toLocaleDateString() });
+  saveAppData();
+}
+
+// [오답노트] 오답노트 목록을 렌더링한다. 풀기는 기존 풀이 모달을 재사용하되 XP는 지급하지 않는다.
+function renderWrongList() {
+  const container = document.getElementById('wrong-list-container');
+  container.innerHTML = '';
+  if (wrongStorage.length === 0) { container.innerHTML = '<div style="text-align:center; color:rgba(0,0,0,0.5); font-weight:800; margin-top:30px;">오답노트가 비어 있어요.<br>틀린 문제의 정답을 확인하면 여기에 모여요!</div>'; return; }
+  wrongStorage.slice().reverse().forEach(w => {
+    const charName = window.Questify.getCharacters()[w.charIdx]?.name || '알 수 없음';
+    const card = document.createElement('div'); card.className = 'storage-card'; card.setAttribute('tabindex', '0');
+    card.innerHTML = `<div class="storage-title">${escapeHTML(w.title || '문제')} <span style="font-size:10px; color:#fcd34d;">[${escapeHTML(charName)}]</span></div><div class="storage-bottom"><span class="storage-tag">${w.wrongCount > 1 ? `${w.wrongCount}번 틀림` : '1번 틀림'} · ${escapeHTML(w.date || '')}</span><div class="storage-actions"><button class="mini-btn" onclick="deleteWrong(${w.id})">삭제</button><button class="mini-btn" onclick="openSolveModalFromWrong(${w.id})">다시 풀기</button></div></div>`;
+    container.appendChild(card);
+  });
+}
+window.deleteWrong = function (id) { showCustomConfirm('오답노트에서 이 문제를 삭제하시겠습니까?', () => { wrongStorage = wrongStorage.filter(w => w.id !== id); renderAll(); }); };
+window.openSolveModalFromWrong = function (id) { const w = wrongStorage.find(x => x.id === id); if (w) { setupSolveModal(w, false); currentActiveQuiz.fromWrong = true; } };
+
+// [오답노트] 퀴즈퀘스트 패널의 목록/오답노트 보기를 전환한다.
+document.getElementById('btn-toggle-wrong').addEventListener('click', () => {
+  isWrongView = !isWrongView;
+  document.getElementById('storage-panel-title').innerText = isWrongView ? '오답노트' : '퀴즈퀘스트';
+  document.getElementById('btn-toggle-wrong').innerText = isWrongView ? '목록' : '오답노트';
+  document.getElementById('storage-list-container').classList.toggle('hidden', isWrongView);
+  document.getElementById('wrong-list-container').classList.toggle('hidden', !isWrongView);
+});
+
 // [채점 처리] 사용자 답안을 비교하고 정답/오답 결과를 출력한다.
-async function processGrading(userAnswer) { if (!currentActiveQuiz) return; const resultBox = document.getElementById('solve-result-state'); const inputState = document.getElementById('solve-input-state'); inputState.classList.add('hidden'); resultBox.classList.remove('hidden'); resultBox.className = 'result-good'; resultBox.innerHTML = '<div style="font-size:16px;">채점 중입니다... ✍️</div>'; resultBox.onclick = null; const cleanUserAnswer = String(userAnswer).trim().toLowerCase(); const cleanCorrectAnswer = String(currentActiveQuiz.answer).trim().toLowerCase(); let isCorrect = false, explanation = ""; if (currentActiveQuiz.type === 'ox' || currentActiveQuiz.type === 'multiple') { isCorrect = (cleanUserAnswer === cleanCorrectAnswer); explanation = currentActiveQuiz.explanation || ""; } else { const aiResult = await gradeWithAI(currentActiveQuiz.content, currentActiveQuiz.answer, userAnswer, currentActiveQuiz.keyPoints); if (aiResult !== null && typeof aiResult.isCorrect === 'boolean') { isCorrect = aiResult.isCorrect; explanation = aiResult.explanation || currentActiveQuiz.explanation || ""; } else { resultBox.className = 'result-bad'; resultBox.innerHTML = `<div style="margin-bottom: 12px; font-size: 16px;">⚠️ 채점에 실패했어요. 네트워크 확인 후 다시 시도 해주세요.</div><div style="display:flex; gap: 8px; width: 100%;"><button id="btn-regrade" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px;">다시 채점</button><button id="btn-edit-answer" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px; background: #fca5a5; color: #7f1d1d; border: 2px solid #7f1d1d;">답 수정</button></div>`; document.getElementById('btn-regrade').onclick = () => processGrading(userAnswer); document.getElementById('btn-edit-answer').onclick = () => { inputState.classList.remove('hidden'); resultBox.classList.add('hidden'); }; return; } } if (!isCorrect) { resultBox.className = 'result-bad'; resultBox.innerHTML = `<div style="margin-bottom: 12px; font-size: 16px;">❌ 틀렸습니다!</div><div style="display:flex; gap: 8px; width: 100%;"><button id="btn-retry" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px; background: #fca5a5; color: #7f1d1d; border: 2px solid #7f1d1d;">다시 풀기</button><button id="btn-show-answer" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px; background: #ef4444; color: #fff; border: 2px solid #7f1d1d;">정답 보기</button></div>`; document.getElementById('btn-retry').onclick = () => { inputState.classList.remove('hidden'); resultBox.classList.add('hidden'); }; document.getElementById('btn-show-answer').onclick = () => { resultBox.innerHTML = `<div style="margin-bottom: 8px;">내가 쓴 답: ${escapeHTML(userAnswer)}</div><div style="color: #b91c1c; font-weight: 900; font-size: 16px; margin-bottom: 12px;">정답: ${escapeHTML(currentActiveQuiz.answer)}</div>${explanation ? `<div style="margin-bottom: 12px; font-size: 13px; color: #7f1d1d; text-align: left; padding: 8px; background: rgba(255,255,255,0.5); border-radius: 8px;"><b>AI 해설:</b> ${escapeHTML(explanation)}</div>` : ''}<button id="btn-close-quiz" class="submit-btn" style="width: 100%; font-size: 14px; padding: 8px;">확인 (닫기)</button>`; document.getElementById('btn-close-quiz').onclick = () => { quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id); syncExclamations(); renderAll(); document.getElementById('modal-overlay').classList.add('hidden'); currentActiveQuiz = null; }; }; return; } resultBox.className = 'result-good'; resultBox.innerHTML = `<div style="margin-bottom: 12px; font-size: 16px;">✅ 정답입니다! 🎉 경험치를 획득했습니다.</div>${explanation ? `<div style="margin-bottom: 12px; font-size: 13px; color: #15803d; text-align: left; padding: 8px; background: rgba(255,255,255,0.5); border-radius: 8px;"><b>AI 해설:</b> ${escapeHTML(explanation)}</div>` : ''}<button id="btn-close-quiz-success" class="submit-btn" style="width: 100%; font-size: 14px; padding: 8px; background: #22c55e;">확인 (닫기)</button>`; if (window.Questify) window.Questify.gainXP(currentActiveQuiz.isSurprise ? 12 : 8, currentActiveQuiz.charIdx); quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id); syncExclamations(); renderAll(); document.getElementById('btn-close-quiz-success').onclick = () => { document.getElementById('modal-overlay').classList.add('hidden'); currentActiveQuiz = null; }; }
+async function processGrading(userAnswer) { if (!currentActiveQuiz) return; const resultBox = document.getElementById('solve-result-state'); const inputState = document.getElementById('solve-input-state'); inputState.classList.add('hidden'); resultBox.classList.remove('hidden'); resultBox.className = 'result-good'; resultBox.innerHTML = '<div style="font-size:16px;">채점 중입니다... ✍️</div>'; resultBox.onclick = null; const cleanUserAnswer = String(userAnswer).trim().toLowerCase(); const cleanCorrectAnswer = String(currentActiveQuiz.answer).trim().toLowerCase(); let isCorrect = false, explanation = ""; if (currentActiveQuiz.type === 'ox' || currentActiveQuiz.type === 'multiple') { isCorrect = (cleanUserAnswer === cleanCorrectAnswer); explanation = currentActiveQuiz.explanation || ""; } else { const aiResult = await gradeWithAI(currentActiveQuiz.content, currentActiveQuiz.answer, userAnswer, currentActiveQuiz.keyPoints); if (aiResult !== null && typeof aiResult.isCorrect === 'boolean') { isCorrect = aiResult.isCorrect; explanation = aiResult.explanation || currentActiveQuiz.explanation || ""; } else { resultBox.className = 'result-bad'; resultBox.innerHTML = `<div style="margin-bottom: 12px; font-size: 16px;">⚠️ 채점에 실패했어요. 네트워크 확인 후 다시 시도 해주세요.</div><div style="display:flex; gap: 8px; width: 100%;"><button id="btn-regrade" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px;">다시 채점</button><button id="btn-edit-answer" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px; background: #fca5a5; color: #7f1d1d; border: 2px solid #7f1d1d;">답 수정</button></div>`; document.getElementById('btn-regrade').onclick = () => processGrading(userAnswer); document.getElementById('btn-edit-answer').onclick = () => { inputState.classList.remove('hidden'); resultBox.classList.add('hidden'); }; return; } } if (!isCorrect) { resultBox.className = 'result-bad'; resultBox.innerHTML = `<div style="margin-bottom: 12px; font-size: 16px;">❌ 틀렸습니다!</div><div style="display:flex; gap: 8px; width: 100%;"><button id="btn-retry" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px; background: #fca5a5; color: #7f1d1d; border: 2px solid #7f1d1d;">다시 풀기</button><button id="btn-show-answer" class="submit-btn" style="flex:1; font-size: 14px; padding: 8px; background: #ef4444; color: #fff; border: 2px solid #7f1d1d;">정답 보기</button></div>`; document.getElementById('btn-retry').onclick = () => { inputState.classList.remove('hidden'); resultBox.classList.add('hidden'); }; document.getElementById('btn-show-answer').onclick = () => { recordWrongAnswer(currentActiveQuiz, userAnswer, explanation); resultBox.innerHTML = `<div style="margin-bottom: 8px;">내가 쓴 답: ${escapeHTML(userAnswer)}</div><div style="color: #b91c1c; font-weight: 900; font-size: 16px; margin-bottom: 12px;">정답: ${escapeHTML(currentActiveQuiz.answer)}</div>${explanation ? `<div style="margin-bottom: 12px; font-size: 13px; color: #7f1d1d; text-align: left; padding: 8px; background: rgba(255,255,255,0.5); border-radius: 8px;"><b>AI 해설:</b> ${escapeHTML(explanation)}</div>` : ''}<button id="btn-close-quiz" class="submit-btn" style="width: 100%; font-size: 14px; padding: 8px;">확인 (닫기)</button>`; document.getElementById('btn-close-quiz').onclick = () => { quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id); syncExclamations(); renderAll(); document.getElementById('modal-overlay').classList.add('hidden'); currentActiveQuiz = null; }; }; return; } resultBox.className = 'result-good'; resultBox.innerHTML = `<div style="margin-bottom: 12px; font-size: 16px;">${currentActiveQuiz.fromWrong ? '✅ 정답입니다! 🎉 오답노트에서 정리되었어요.' : '✅ 정답입니다! 🎉 경험치를 획득했습니다.'}</div>${explanation ? `<div style="margin-bottom: 12px; font-size: 13px; color: #15803d; text-align: left; padding: 8px; background: rgba(255,255,255,0.5); border-radius: 8px;"><b>AI 해설:</b> ${escapeHTML(explanation)}</div>` : ''}<button id="btn-close-quiz-success" class="submit-btn" style="width: 100%; font-size: 14px; padding: 8px; background: #22c55e;">확인 (닫기)</button>`; if (currentActiveQuiz.fromWrong) { wrongStorage = wrongStorage.filter(w => w.id !== currentActiveQuiz.id); } else if (window.Questify) window.Questify.gainXP(currentActiveQuiz.isSurprise ? 12 : 8, currentActiveQuiz.charIdx); quizStorage = quizStorage.filter(q => q.id !== currentActiveQuiz.id); syncExclamations(); renderAll(); document.getElementById('btn-close-quiz-success').onclick = () => { document.getElementById('modal-overlay').classList.add('hidden'); currentActiveQuiz = null; }; }
 document.getElementById('btn-grade-problem').addEventListener('click', () => { const userAnswer = document.getElementById('input-solve-answer').value; processGrading(userAnswer); });
 document.getElementById('btn-ox-o').addEventListener('click', () => { processGrading("O"); });
 document.getElementById('btn-ox-x').addEventListener('click', () => { processGrading("X"); });
@@ -1281,8 +1318,10 @@ window.deleteChar = function (idx) {
     chars.splice(idx, 1);
     quizStorage = quizStorage.filter(q => q.charIdx !== idx);
     memoStorage = memoStorage.filter(m => m.charIdx !== idx);
+    wrongStorage = wrongStorage.filter(w => w.charIdx !== idx);
 
     quizStorage.forEach(q => { if (q.charIdx > idx) q.charIdx--; });
+    wrongStorage.forEach(w => { if (w.charIdx > idx) w.charIdx--; });
     memoStorage.forEach(m => { if (m.charIdx > idx) m.charIdx--; });
 
     const __maxIdx = chars.length - 1;
