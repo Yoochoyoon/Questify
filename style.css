@@ -1329,6 +1329,20 @@
       word-break: break-all;
     }
 
+    /* 정답/해설 텍스트를 드래그해서 복사할 수 있도록 선택을 허용한다. (body 기본값은 user-select: none) */
+    #solve-result-state,
+    #solve-result-state * {
+      user-select: text;
+      -webkit-user-select: text;
+      cursor: text;
+    }
+
+    #solve-result-state button {
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+    }
+
     .result-good {
       border: 2.5px solid #22c55e;
       background: #dcfce7;
