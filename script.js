@@ -253,6 +253,23 @@ function rolloverQuests() {
   });
 }
 
+// [완료 취소] 완료한 퀘스트를 다시 진행 중 상태로 되돌린다. 이미 받은 XP는 회수하지 않으며, 다시 완료해도 XP는 중복 지급되지 않는다.
+window.cancelTodoClear = function (id) {
+  const t = todoList.find(x => x.id === id);
+  if (!t || t.status !== 'clear' || t.isPastLog) return;
+  t.status = 'ready'; t.isHiddenInLog = false;
+  (t.subtasks || []).forEach(s => { if (s.clearedByParent) { s.status = 'ready'; s.clearedByParent = false; } });
+  renderAll();
+};
+window.cancelSubtaskClear = function (parentId, subId) {
+  const t = todoList.find(x => x.id === parentId);
+  const sub = t && (t.subtasks || []).find(s => s.id === subId);
+  if (!sub || sub.status !== 'clear' || sub.isPastLog) return;
+  sub.status = 'ready'; sub.clearedByParent = false; sub.isHiddenInLog = false;
+  if (t.status === 'clear') { t.status = 'ready'; t.isHiddenInLog = false; }
+  renderAll();
+};
+
 // [미완료 복구] 로그의 미완료 퀘스트를 오늘 목록으로 다시 가져온다.
 window.restoreMissedTodo = function (id) {
   const t = todoList.find(x => x.id === id);
@@ -381,6 +398,7 @@ function renderTodoList() {
                         <button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>X</span></button>`;
     } else {
       if (item.isMissed) innerHTML += `<span class="subtask-card-clear input" style="margin-right:4px;">미완료</span><button onclick="event.stopPropagation(); restoreMissedTodo(${item.id})" class="mini-btn" title="오늘 목록으로 다시 가져오기">↩</button>`;
+      if (item.status === 'clear' && !item.isPastLog) innerHTML += `<button onclick="event.stopPropagation(); cancelTodoClear(${item.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
       innerHTML += `<button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>X</span></button>`;
     }
     innerHTML += `</div>`;
@@ -419,8 +437,10 @@ function renderTodoList() {
                           <button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px;">X</button>`;
         } else if (!isLogView && sub.status === 'clear') {
           subHTML += `<span class="subtask-card-clear input">완료</span>`;
+          if (!sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px; margin-left:4px;">X</button>`;
         } else if (isLogView) {
+          if (sub.status === 'clear' && !sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px;">X</button>`;
         }
         subHTML += `</div>`;
@@ -509,7 +529,7 @@ window.saveSubtaskTitle = function (parentId, subId, newTitle, restoreFocus) {
 };
 
 // 하위 퀘스트 성공 시 소량의 경험치 지급 및 전체 달성도 갱신 확인을 실시한다.
-window.handleSubtaskAction = function (parentId, subId, action) { const item = todoList.find(t => t.id === parentId); if (!item) return; const subIdx = item.subtasks.findIndex(s => s.id === subId); if (subIdx === -1) return; if (action === 'clear') { item.subtasks[subIdx].status = 'clear'; const chars = window.Questify.getCharacters(); grantQuestXP(2); const allClear = item.subtasks.every(s => s.status === 'clear'); if (allClear) { item.status = 'clear'; grantQuestXP(10); } } else if (action === 'delete') { if (isLogView) item.subtasks[subIdx].isHiddenInLog = true; else item.subtasks.splice(subIdx, 1); } if (item.subtasks.length === 0) { item.isExpanded = false; } renderAll(); };
+window.handleSubtaskAction = function (parentId, subId, action) { const item = todoList.find(t => t.id === parentId); if (!item) return; const subIdx = item.subtasks.findIndex(s => s.id === subId); if (subIdx === -1) return; if (action === 'clear') { const sub = item.subtasks[subIdx]; sub.status = 'clear'; sub.clearedByParent = false; if (!sub.xpGiven) { sub.xpGiven = true; grantQuestXP(2); } const allClear = item.subtasks.every(s => s.status === 'clear'); if (allClear) { item.status = 'clear'; if (!item.xpGiven) { item.xpGiven = true; grantQuestXP(10); } } } else if (action === 'delete') { if (isLogView) item.subtasks[subIdx].isHiddenInLog = true; else item.subtasks.splice(subIdx, 1); } if (item.subtasks.length === 0) { item.isExpanded = false; } renderAll(); };
 
 // 메인 퀘스트 텍스트 입력 소실 시 데이터를 배열에 보존하고 시각화 갱신을 지시한다.
 window.saveTodoTitle = function (id, newTitle, restoreFocus) {
@@ -536,7 +556,7 @@ window.makeTodoEditable = function (id) { const idx = todoList.findIndex(item =>
 function updateProgressBar() { const todos = todoList.filter(item => item.type === 'todo' && !item.isPastLog); const total = todos.length; const clears = todos.filter(item => item.status === 'clear').length; const percent = total > 0 ? (clears / total) * 100 : 0; document.getElementById('progress-bar-fill').style.width = percent + '%'; document.getElementById('progress-text').innerText = clears + '/' + total; }
 
 // 메인 퀘스트의 완료 또는 제거 지시를 받고 배열 속성 제어 및 경험치 보상을 관할한다.
-window.handleTodoAction = function (id, action) { const idx = todoList.findIndex(item => item.id === id); if (idx === -1) return; if (action === 'clear') { todoList[idx].status = 'clear'; if (todoList[idx].subtasks) { todoList[idx].subtasks.forEach(sub => sub.status = 'clear'); } const chars = window.Questify.getCharacters(); grantQuestXP(10); } if (action === 'delete') { if (isLogView) { todoList[idx].isHiddenInLog = true; if (todoList[idx].subtasks) { todoList[idx].subtasks.forEach(sub => sub.isHiddenInLog = true); } } else { todoList.splice(idx, 1); } } renderAll(); };
+window.handleTodoAction = function (id, action) { const idx = todoList.findIndex(item => item.id === id); if (idx === -1) return; if (action === 'clear') { const t = todoList[idx]; t.status = 'clear'; (t.subtasks || []).forEach(sub => { if (sub.status !== 'clear') { sub.status = 'clear'; sub.clearedByParent = true; } }); if (!t.xpGiven) { t.xpGiven = true; grantQuestXP(10); } } if (action === 'delete') { if (isLogView) { todoList[idx].isHiddenInLog = true; if (todoList[idx].subtasks) { todoList[idx].subtasks.forEach(sub => sub.isHiddenInLog = true); } } else { todoList.splice(idx, 1); } } renderAll(); };
 
 // 이미 등록된 캐릭터 전용 학습 메모의 내용을 수정 모달에 인젝션하는 호출부이다.
 window.editMemo = function (memoId, charIdx) {
