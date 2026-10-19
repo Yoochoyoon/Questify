@@ -879,7 +879,9 @@ window.openSolveModalFromWrong = function (id) { const w = wrongStorage.find(x =
 document.getElementById('btn-toggle-wrong').addEventListener('click', () => {
   isWrongView = !isWrongView;
   document.getElementById('storage-panel-title').innerText = isWrongView ? '오답노트' : '퀴즈퀘스트';
-  document.getElementById('btn-toggle-wrong').innerText = isWrongView ? '목록' : '오답노트';
+  const wrongBtn = document.getElementById('btn-toggle-wrong');
+  wrongBtn.innerText = isWrongView ? '목록' : '오답노트';
+  wrongBtn.classList.toggle('is-list-btn', isWrongView);
   document.getElementById('storage-list-container').classList.toggle('hidden', isWrongView);
   document.getElementById('wrong-list-container').classList.toggle('hidden', !isWrongView);
 });

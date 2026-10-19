@@ -1747,6 +1747,18 @@
       box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
     }
 
+    /* 오답노트 전환 버튼: 로그 버튼과 같은 모양, 색만 다르다. (오답노트=붉은색, 목록=짙은 파랑) */
+    #btn-toggle-wrong {
+      background: #dc2626 !important;
+      border: 2.5px solid #7f1d1d !important;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    #btn-toggle-wrong.is-list-btn {
+      background: #1e3a8a !important;
+      border-color: #172554 !important;
+    }
+
     .mini-btn,
     .quiz-card button {
       flex-shrink: 0;
