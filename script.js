@@ -592,6 +592,102 @@ function renderCharMemos(charIdx) {
 
 window.deleteMemo = function (memoId, charIdx) { showCustomConfirm('이 메모를 삭제하시겠습니까?', () => { memoStorage = memoStorage.filter(m => m.id !== memoId); saveAppData(); renderCharMemos(charIdx); }); }
 
+// 메모장 Tab 들여쓰기 처리. execCommand를 우선 사용해 Ctrl+Z 되돌리기가 유지되도록 한다.
+function replaceTextareaRange(ta, start, end, text) {
+  ta.setSelectionRange(start, end);
+  if (!document.execCommand('insertText', false, text)) ta.setRangeText(text, start, end, 'end');
+}
+function handleNotepadTab(ta, outdent) {
+  const { selectionStart: s, selectionEnd: en, value: v } = ta;
+  const multiLine = v.slice(s, en).includes('\n');
+  if (!outdent && !multiLine) { replaceTextareaRange(ta, s, en, '\t'); return; }
+  const lineStart = v.lastIndexOf('\n', s - 1) + 1;
+  const lines = v.slice(lineStart, en).split('\n');
+  const changed = lines.map(l => outdent ? l.replace(/^(\t| {1,4})/, '') : '\t' + l);
+  const newText = changed.join('\n');
+  if (newText === lines.join('\n')) return;
+  replaceTextareaRange(ta, lineStart, en, newText);
+  const firstDiff = changed[0].length - lines[0].length;
+  ta.setSelectionRange(Math.max(lineStart, s + firstDiff), lineStart + newText.length);
+}
+
+// 메모 서식 툴바. 인라인 서식은 선택한 글자를 감싸고(이미 감싸져 있으면 해제), 줄 서식은 선택한 줄 앞에 기호를 붙이거나 뗀다.
+const MEMO_INLINE_FMT = {
+  bold: ['**', '**', '굵은 글자'],
+  italic: ['*', '*', '기울인 글자'],
+  strike: ['~~', '~~', '취소선 글자'],
+  mark: ['<mark>', '</mark>', '형광펜 글자'],
+  code: ['`', '`', '코드'],
+};
+const MEMO_LINE_FMT = { heading: '## ', list: '- ', task: '- [ ] ', quote: '> ' };
+
+function wrapNotepadSelection(ta, before, after, placeholder) {
+  const { selectionStart: s, selectionEnd: en, value: v } = ta;
+  // 선택 영역 바로 바깥이 이미 같은 기호로 감싸져 있으면 서식을 해제한다.
+  if (v.slice(s - before.length, s) === before && v.slice(en, en + after.length) === after) {
+    const inner = v.slice(s, en);
+    replaceTextareaRange(ta, s - before.length, en + after.length, inner);
+    ta.setSelectionRange(s - before.length, s - before.length + inner.length);
+    return;
+  }
+  const inner = v.slice(s, en) || placeholder;
+  replaceTextareaRange(ta, s, en, before + inner + after);
+  ta.setSelectionRange(s + before.length, s + before.length + inner.length);
+}
+
+function toggleNotepadLinePrefix(ta, prefix) {
+  const { selectionStart: s, selectionEnd: en, value: v } = ta;
+  const lineStart = v.lastIndexOf('\n', s - 1) + 1;
+  const lines = v.slice(lineStart, en).split('\n');
+  const allHave = lines.every(l => l.trimStart().startsWith(prefix));
+  const changed = lines.map(l => {
+    const indent = l.match(/^\s*/)[0];
+    const rest = l.slice(indent.length);
+    if (allHave) return indent + rest.slice(prefix.length);
+    // 다른 줄 서식이 붙어 있으면 바꿔 끼운다. (예: 목록 → 체크리스트)
+    return indent + prefix + rest.replace(/^(#{1,6} |- \[[ xX]\] |[-*+] |> )/, '');
+  });
+  const newText = changed.join('\n');
+  replaceTextareaRange(ta, lineStart, en, newText);
+  ta.setSelectionRange(lineStart, lineStart + newText.length);
+}
+
+function applyNotepadFormat(fmt, color) {
+  const ta = document.getElementById('input-notepad-content');
+  ta.focus();
+  if (fmt === 'color') wrapNotepadSelection(ta, `<span style="color:${color}">`, '</span>', '색 글자');
+  else if (MEMO_INLINE_FMT[fmt]) wrapNotepadSelection(ta, ...MEMO_INLINE_FMT[fmt]);
+  else if (MEMO_LINE_FMT[fmt]) toggleNotepadLinePrefix(ta, MEMO_LINE_FMT[fmt]);
+}
+
+document.querySelectorAll('.memo-fmt-btns button').forEach(btn => {
+  btn.addEventListener('mousedown', e => e.preventDefault()); // 클릭해도 메모장의 선택 영역이 풀리지 않도록 한다.
+  btn.addEventListener('click', () => applyNotepadFormat(btn.dataset.fmt, btn.dataset.color));
+});
+
+document.getElementById('input-notepad-content').addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.isComposing) return;
+  const k = e.key.toLowerCase();
+  if (k === 'b') { e.preventDefault(); applyNotepadFormat('bold'); }
+  else if (k === 'i') { e.preventDefault(); applyNotepadFormat('italic'); }
+});
+
+// 메모 전용 폰트·글자 크기 설정. 메모장 입력창과 메모 목록 본문에만 적용되며 브라우저에 저장된다.
+function initMemoPref(selectId, storageKey, cssVar) {
+  const select = document.getElementById(selectId);
+  const apply = v => { if (v) document.documentElement.style.setProperty(cssVar, v); else document.documentElement.style.removeProperty(cssVar); };
+  let saved = '';
+  try { saved = localStorage.getItem(storageKey) || ''; } catch (e) { }
+  if ([...select.options].some(o => o.value === saved)) select.value = saved; else saved = '';
+  select.addEventListener('change', () => {
+    apply(select.value);
+    try { localStorage.setItem(storageKey, select.value); } catch (e) { }
+  });
+  apply(saved);
+}
+initMemoPref('memo-font-select', 'questify_memo_font', '--memo-font');
+initMemoPref('memo-size-select', 'questify_memo_size', '--memo-font-size');
+
 window.submitNotepad = function () { document.getElementById('btn-submit-notepad').click(); };
 document.getElementById('btn-open-notepad').onclick = () => {
   editingMemoId = null;
@@ -1213,6 +1309,12 @@ document.addEventListener('keydown', function (e) {
   const active = document.activeElement;
 
   if (active && active.tagName === 'TEXTAREA') {
+    // 메모장에서 Tab은 포커스 이동 대신 들여쓰기로 동작한다. (여러 줄 선택 시 줄 단위 들여쓰기, Shift+Tab은 내어쓰기)
+    if (key === 'Tab' && active.id === 'input-notepad-content') {
+      e.preventDefault();
+      handleNotepadTab(active, e.shiftKey);
+      return;
+    }
     if (key === 'Escape') {
       e.preventDefault();
       if (active.id === 'input-notepad-content') {
@@ -1221,6 +1323,8 @@ document.addEventListener('keydown', function (e) {
     }
     return;
   }
+
+  if (active && active.tagName === 'SELECT') return;
 
   if (active && active.tagName === 'INPUT') {
     if (key === 'Enter') {

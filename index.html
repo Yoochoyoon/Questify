@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Nanum+Gothic:wght@400;800&family=Nanum+Myeongjo:wght@400;800&family=Gowun+Dodum&family=Jua&family=Nanum+Pen+Script&family=Gaegu:wght@400;700&display=swap">
   <link rel="stylesheet" href="style.css">
   <title>Questify</title>
 </head>
@@ -185,6 +188,43 @@
         <h2 style="text-align:center; margin-top:0;">학습 메모장</h2>
         <div style="font-size:12px; color:#4b5563; margin-bottom:8px; text-align:center;"
           id="notepad-target-char-label"></div>
+        <!-- 메모 서식 툴바: 버튼은 선택한 글자에 마크다운/태그를 씌우고, 폰트·크기는 메모에만 적용된다. -->
+        <div class="memo-toolbar">
+          <div class="memo-fmt-btns">
+            <button type="button" data-fmt="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
+            <button type="button" data-fmt="italic" title="기울임 (Ctrl+I)"><i>I</i></button>
+            <button type="button" data-fmt="strike" title="취소선"><s>S</s></button>
+            <button type="button" data-fmt="mark" title="형광펜"><span style="background:#fde047; padding:0 2px;">형</span></button>
+            <button type="button" data-fmt="color" data-color="#ef4444" title="빨간 글자"><span style="color:#ef4444;">A</span></button>
+            <button type="button" data-fmt="color" data-color="#2563eb" title="파란 글자"><span style="color:#2563eb;">A</span></button>
+            <button type="button" data-fmt="color" data-color="#16a34a" title="초록 글자"><span style="color:#16a34a;">A</span></button>
+            <span class="memo-fmt-sep"></span>
+            <button type="button" data-fmt="heading" title="제목">H</button>
+            <button type="button" data-fmt="list" title="목록">•</button>
+            <button type="button" data-fmt="task" title="체크리스트">☑</button>
+            <button type="button" data-fmt="quote" title="인용">❝</button>
+            <button type="button" data-fmt="code" title="코드">&lt;/&gt;</button>
+          </div>
+          <div class="memo-font-opts">
+            <select id="memo-size-select" title="메모 글자 크기">
+              <option value="12px">작게</option>
+              <option value="" selected>보통</option>
+              <option value="16px">크게</option>
+              <option value="19px">아주 크게</option>
+            </select>
+            <select id="memo-font-select" title="메모 폰트">
+            <option value="">기본</option>
+            <option value="'Noto Sans KR', sans-serif">본고딕 (Noto Sans)</option>
+            <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+            <option value="'Nanum Myeongjo', serif">나눔명조</option>
+            <option value="'Gowun Dodum', sans-serif">고운돋움</option>
+            <option value="'Jua', sans-serif">주아</option>
+            <option value="'Gaegu', cursive">개구 (손글씨)</option>
+            <option value="'Nanum Pen Script', cursive">나눔펜 (손글씨)</option>
+            <option value="'D2Coding', Consolas, monospace">고정폭 (코드)</option>
+          </select>
+          </div>
+        </div>
         <textarea id="input-notepad-content" class="area" placeholder="공부한 내용을 이곳에 메모하세요! (줄바꿈: Enter, 저장 및 창 닫기: Esc)&#10;서식도 쓸 수 있어요: # 제목, - 목록, **굵게**"
           onkeydown="if(event.key==='Escape'){ event.preventDefault(); window.submitNotepad(); }"></textarea>
         <button id="btn-submit-notepad" class="submit-btn" style="background:#59A3F8; margin-top:auto;">저장</button>

@@ -2157,6 +2157,69 @@
       color: #000;
     }
 
+    /* 메모 전용 폰트: 메모장 입력창과 메모 목록 본문에만 적용된다. (script.js에서 --memo-font 설정) */
+    #input-notepad-content,
+    .memo-text {
+      font-family: var(--memo-font, inherit);
+      tab-size: 4;
+    }
+
+    #input-notepad-content { font-size: var(--memo-font-size, 14px); }
+    .memo-text { font-size: var(--memo-font-size, inherit); }
+
+    .memo-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .memo-fmt-btns,
+    .memo-font-opts {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .memo-fmt-btns button {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 6px;
+      border: 2px solid #9A8978;
+      border-radius: 6px;
+      background: #F0E3D3;
+      font-size: 13px;
+      font-weight: 900;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .memo-fmt-btns button:hover { background: #e6d3bc; }
+
+    .memo-fmt-sep {
+      width: 2px;
+      height: 20px;
+      margin: 0 2px;
+      background: #9A8978;
+      border-radius: 1px;
+    }
+
+    .memo-md mark { background: #fde047; padding: 0 2px; }
+    .memo-md ul:has(> li > input[type="checkbox"]) { list-style: none; padding-left: 4px; }
+
+    #memo-size-select,
+    #memo-font-select {
+      border: 2px solid #9A8978;
+      border-radius: 6px;
+      background: #F0E3D3;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
     .memo-text:hover {
       background: rgba(0, 0, 0, 0.05);
     }
@@ -2173,9 +2236,9 @@
     .memo-md > :first-child { margin-top: 0; }
     .memo-md > :last-child { margin-bottom: 0; }
     .memo-md h1, .memo-md h2, .memo-md h3, .memo-md h4 { margin: 8px 0 4px; line-height: 1.3; }
-    .memo-md h1 { font-size: 18px; }
-    .memo-md h2 { font-size: 16px; }
-    .memo-md h3, .memo-md h4 { font-size: 14px; }
+    .memo-md h1 { font-size: 1.4em; }
+    .memo-md h2 { font-size: 1.25em; }
+    .memo-md h3, .memo-md h4 { font-size: 1.1em; }
     .memo-md p { margin: 4px 0; }
     .memo-md ul, .memo-md ol { margin: 4px 0; padding-left: 20px; }
     .memo-md code { background: rgba(0, 0, 0, 0.08); border-radius: 3px; padding: 0 4px; font-family: monospace; }
