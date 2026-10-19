@@ -780,22 +780,38 @@ const QUIZ_GEN_INTERVAL_MS = 10000;
 const QUIZ_GEN_PROBABILITY = 0.8;
 const MAX_QUIZZES_PER_CHAR = 3;
 
+// [균형 선택] 점수가 가장 낮은 후보 중에서 무작위로 하나를 고른다. (점수가 같은 후보끼리만 무작위)
+function pickLeastScored(items, scoreFn) {
+  if (items.length === 0) return null;
+  const scored = items.map(it => ({ it, score: scoreFn(it) }));
+  const min = Math.min(...scored.map(x => x.score));
+  const pool = scored.filter(x => x.score === min);
+  return pool[Math.floor(Math.random() * pool.length)].it;
+}
+const lastQuizTypeByChar = {};
+
 setInterval(async () => {
   if (memoStorage.length === 0 || isGeneratingQuiz) return;
   const apiKey = localStorage.getItem('gemini_api_key');
   if (!apiKey) return;
 
   if (Math.random() < QUIZ_GEN_PROBABILITY) {
-    const randomMemo = memoStorage[Math.floor(Math.random() * memoStorage.length)];
     const chars = window.Questify.getCharacters();
+    // [캐릭터 선택] 메모가 있고 문제 보관함에 여유가 있는 캐릭터 중에서 무작위로 고른다. (보관함이 가득 찬 캐릭터는 제외해 생성 턴이 낭비되지 않게 한다.)
+    const pendingOf = ci => quizStorage.filter(q => q.charIdx === ci).length;
+    const eligibleChars = chars.map((_, ci) => ci).filter(ci => memoStorage.some(m => m.charIdx === ci) && pendingOf(ci) < MAX_QUIZZES_PER_CHAR);
+    if (eligibleChars.length === 0) return;
+    const pickedCharIdx = eligibleChars[Math.floor(Math.random() * eligibleChars.length)];
+    // [메모 선택] 그 캐릭터의 메모 중 문제로 가장 적게 쓰인 메모를 우선한다.
+    const randomMemo = pickLeastScored(memoStorage.filter(m => m.charIdx === pickedCharIdx), m => m.quizUses || 0);
     const targetChar = chars[randomMemo.charIdx];
-    const quizCount = quizStorage.filter(q => q.charIdx === randomMemo.charIdx).length;
+    const quizCount = pendingOf(randomMemo.charIdx);
 
     if (targetChar && quizCount < MAX_QUIZZES_PER_CHAR) {
       isGeneratingQuiz = true;
-      // [퀴즈 유형 계산] 현재 캐릭터가 허용하는 문제 유형 목록을 구한다.
+      // [퀴즈 유형 계산] 허용된 유형 중 대기 중인 문제에 가장 적게 들어 있는 유형을 우선하고, 직전 유형은 피한다.
       const availableTypes = (targetChar.quizTypes && targetChar.quizTypes.length > 0) ? targetChar.quizTypes : ['ox', 'multiple', 'short'];
-      const quizType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+      const quizType = pickLeastScored(availableTypes, t => quizStorage.filter(q => q.charIdx === randomMemo.charIdx && q.type === t).length * 10 + (availableTypes.length > 1 && lastQuizTypeByChar[randomMemo.charIdx] === t ? 1 : 0));
 
       const generated = await fetchQuizFromGemini(randomMemo.content, quizType);
       const currentChars = window.Questify.getCharacters();
@@ -808,6 +824,7 @@ setInterval(async () => {
         if (!newQuiz.content) { console.warn('[AI 퀴즈] content 필드 누락:', newQuiz); isGeneratingQuiz = false; return; }
         quizStorage.push({ id: uid(), title: newQuiz.title || "AI 생성 문제", content: newQuiz.content || "문제 내용", options: newQuiz.options || [], answer: newQuiz.answer || "자유 응답형", keyPoints: Array.isArray(newQuiz.keyPoints) ? newQuiz.keyPoints : [], explanation: newQuiz.explanation || "해설이 제공되지 않았습니다.", type: quizType, charIdx: randomMemo.charIdx });
         aliveChar.showExclamation = true;
+        randomMemo.quizUses = (randomMemo.quizUses || 0) + 1; lastQuizTypeByChar[randomMemo.charIdx] = quizType;
         saveAppData(); window.Questify.saveState(); window.Questify.updateUI(); renderStorageList();
       }
       isGeneratingQuiz = false;
