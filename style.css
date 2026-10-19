@@ -1803,20 +1803,24 @@
     }
 
     /* 퀴즈 퀘스트 삭제 버튼 (기존 어두운 파란색 복구) */
-    #Pdel {
+    #Pdel,
+    .wrong-del-btn {
       background: #31447c;
       color: white;
     }
 
-    #Pdel:hover {
+    #Pdel:hover,
+    .wrong-del-btn:hover {
       background: #4169a9;
     }
 
-    #Bstorage {
+    #Bstorage,
+    .wrong-retry-btn {
       background: #2eabe0;
     }
 
-    #Bstorage:hover {
+    #Bstorage:hover,
+    .wrong-retry-btn:hover {
       background: #26c5f5;
     }
 

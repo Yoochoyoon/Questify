@@ -868,7 +868,7 @@ function renderWrongList() {
   wrongStorage.slice().reverse().forEach(w => {
     const charName = window.Questify.getCharacters()[w.charIdx]?.name || '알 수 없음';
     const card = document.createElement('div'); card.className = 'storage-card'; card.setAttribute('tabindex', '0');
-    card.innerHTML = `<div class="storage-title">${escapeHTML(w.title || '문제')} <span style="font-size:10px; color:#fcd34d;">[${escapeHTML(charName)}]</span></div><div class="storage-bottom"><span class="storage-tag">${w.wrongCount > 1 ? `${w.wrongCount}번 틀림` : '1번 틀림'} · ${escapeHTML(w.date || '')}</span><div class="storage-actions"><button class="mini-btn" onclick="deleteWrong(${w.id})">삭제</button><button class="mini-btn" onclick="openSolveModalFromWrong(${w.id})">다시 풀기</button></div></div>`;
+    card.innerHTML = `<div class="storage-title">${escapeHTML(w.title || '문제')} <span style="font-size:10px; color:#fcd34d;">[${escapeHTML(charName)}]</span></div><div class="storage-bottom"><span class="storage-tag">${w.wrongCount > 1 ? `${w.wrongCount}번 틀림` : '1번 틀림'} · ${escapeHTML(w.date || '')}</span><div class="storage-actions"><button class="mini-btn wrong-del-btn" onclick="deleteWrong(${w.id})">삭제</button><button class="mini-btn wrong-retry-btn" onclick="openSolveModalFromWrong(${w.id})">다시 풀기</button></div></div>`;
     container.appendChild(card);
   });
 }
