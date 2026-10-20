@@ -162,31 +162,25 @@
       <!-- 학습 메모 목록을 조회하고 편집할 수 있는 모달이다. -->
       <div id="char-memo-modal" class="modal-content hidden">
         <button class="close-modal-btn">X</button>
-        <h2 id="char-memo-title" style="text-align:center; margin-top:0;">학습 메모</h2>
+        <!-- 제목과 전체 화면 버튼을 한 줄로 두어 메모 목록 영역을 최대한 확보한다. -->
+        <div class="memo-modal-head">
+          <h2 id="char-memo-title">학습 메모</h2>
+          <button type="button" id="btn-memo-fullscreen" class="memo-fullscreen-btn" title="전체 화면으로 보기">⛶</button>
+        </div>
 
-        <!-- [수정] 퀴즈 출제 유형을 개별 캐릭터에 귀속시켜 체크박스 형태로 제공하는 설정 영역이다. -->
-        <div class="quiz-type-selection"
-          style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 6px;">
-          <label style="font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px;">출제할 퀴즈 유형 지정 (캐릭터별
-            저장)</label>
-          <div style="display: flex; gap: 15px; font-size: 13px;">
-            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-              <input type="checkbox" id="quiz-type-ox" value="ox" checked> OX 퀴즈
-            </label>
-            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-              <input type="checkbox" id="quiz-type-multiple" value="multiple" checked> 객관식
-            </label>
-            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-              <input type="checkbox" id="quiz-type-short" value="short" checked> 주관식 서술형
-            </label>
-          </div>
+        <!-- [수정] 퀴즈 출제 유형을 개별 캐릭터에 귀속시켜 체크박스 형태로 제공하는 설정 영역이다. 한 줄로 압축해 표시한다. -->
+        <div class="quiz-type-selection" title="출제할 퀴즈 유형 (캐릭터별 저장)">
+          <span class="quiz-type-label">출제 유형</span>
+          <label><input type="checkbox" id="quiz-type-ox" value="ox" checked> OX</label>
+          <label><input type="checkbox" id="quiz-type-multiple" value="multiple" checked> 객관식</label>
+          <label><input type="checkbox" id="quiz-type-short" value="short" checked> 서술형</label>
         </div>
 
         <!-- 작성된 메모들이 동적으로 삽입되는 컨테이너 공간이다. -->
         <div id="char-memo-list"
-          style="flex:1; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding: 2px;">
+          style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:8px; padding: 2px;">
         </div>
-        <button id="btn-open-notepad" class="submit-btn" style="width:100%; margin-top:auto;">+ 새 메모 작성</button>
+        <button id="btn-open-notepad" class="submit-btn" style="width:100%; flex-shrink:0; padding-top:8px; padding-bottom:8px;">+ 새 메모 작성</button>
       </div>
 
       <!-- 새로운 학습 메모를 타이핑하여 등록하는 편집 폼 모달이다. -->

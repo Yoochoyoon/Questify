@@ -159,6 +159,17 @@ let isMemoOpenedFromSlot = false; // [추가됨] 캐릭터 유니온(슬롯) 창
 function closeAllCustomModals() { document.querySelectorAll('#modal-overlay .modal-content').forEach(m => m.classList.add('hidden')); }
 function openSpecificModal(modalId) { modalOverlay.classList.remove('hidden'); closeAllCustomModals(); document.getElementById(modalId).classList.remove('hidden'); }
 
+// [학습 메모] 전체 화면 보기 토글. 상태는 메모장을 다녀와도 유지되며, 오버레이 여백은 CSS(:has)가 처리한다.
+function setMemoFullscreen(on) {
+  document.getElementById('char-memo-modal').classList.toggle('memo-fullscreen', on);
+  const btn = document.getElementById('btn-memo-fullscreen');
+  btn.innerText = on ? '🗗' : '⛶';
+  btn.title = on ? '원래 크기로' : '전체 화면으로 보기';
+}
+document.getElementById('btn-memo-fullscreen').addEventListener('click', () => {
+  setMemoFullscreen(!document.getElementById('char-memo-modal').classList.contains('memo-fullscreen'));
+});
+
 // [수정됨] 모달 창 내부의 X 닫기 버튼 클릭 시나리오 제어 로직
 document.querySelectorAll('.close-modal-btn').forEach(btn => {
   btn.addEventListener('click', function (e) {
