@@ -612,6 +612,7 @@ function renderCharMemos(charIdx) {
   document.getElementById('quiz-type-ox').checked = qTypes.includes('ox');
   document.getElementById('quiz-type-multiple').checked = qTypes.includes('multiple');
   document.getElementById('quiz-type-short').checked = qTypes.includes('short');
+  updateQuizGenNote(qTypes);
 
   const container = document.getElementById('char-memo-list');
   container.innerHTML = '';
@@ -835,17 +836,18 @@ function saveQuizTypesForChar() {
   if (document.getElementById('quiz-type-multiple').checked) selectedTypes.push('multiple');
   if (document.getElementById('quiz-type-short').checked) selectedTypes.push('short');
 
-  if (selectedTypes.length === 0) {
-    showCustomAlert('최소 한 개 이상의 퀴즈 유형을 선택해야 합니다!');
-    document.getElementById('quiz-type-short').checked = true;
-    selectedTypes.push('short');
-  }
-
+  // 모두 해제하면 빈 배열로 저장되어 이 캐릭터의 문제 생성이 꺼진다.
   const char = window.Questify.getCharacters()[targetCharIdxForMemo];
   if (char) {
     char.quizTypes = selectedTypes;
     window.Questify.saveState();
   }
+  updateQuizGenNote(selectedTypes);
+}
+
+// 출제 유형이 하나도 선택되지 않았으면 "문제 생성 꺼짐"을 보여 준다.
+function updateQuizGenNote(types) {
+  document.getElementById('quiz-gen-off-note').classList.toggle('hidden', types.length > 0);
 }
 document.getElementById('quiz-type-ox').addEventListener('change', saveQuizTypesForChar);
 document.getElementById('quiz-type-multiple').addEventListener('change', saveQuizTypesForChar);
@@ -879,6 +881,8 @@ function pickLeastScored(items, scoreFn) {
   return pool[Math.floor(Math.random() * pool.length)].it;
 }
 const lastQuizTypeByChar = {};
+// 캐릭터의 출제 유형이 하나라도 선택돼 있어야 문제를 만든다. (유형 정보가 없는 예전 데이터는 모두 선택된 것으로 본다)
+const quizGenEnabled = char => !!char && (!Array.isArray(char.quizTypes) || char.quizTypes.length > 0);
 const MAX_PAST_QUESTIONS = 8;
 // [중복 문제 검사] 두 문제 텍스트의 글자 2-gram 유사도(Dice)를 구한다. 1에 가까울수록 같은 문제다.
 function quizSimilarity(a, b) {
@@ -900,7 +904,7 @@ setInterval(async () => {
     const chars = window.Questify.getCharacters();
     // [캐릭터 선택] 메모가 있고 문제 보관함에 여유가 있는 캐릭터 중에서 무작위로 고른다. (보관함이 가득 찬 캐릭터는 제외해 생성 턴이 낭비되지 않게 한다.)
     const pendingOf = ci => quizStorage.filter(q => q.charIdx === ci).length;
-    const eligibleChars = chars.map((_, ci) => ci).filter(ci => memoStorage.some(m => m.charIdx === ci && memoReady(m)) && pendingOf(ci) < MAX_QUIZZES_PER_CHAR);
+    const eligibleChars = chars.map((_, ci) => ci).filter(ci => memoStorage.some(m => m.charIdx === ci && memoReady(m)) && pendingOf(ci) < MAX_QUIZZES_PER_CHAR && quizGenEnabled(chars[ci]));
     if (eligibleChars.length === 0) return;
     const pickedCharIdx = eligibleChars[Math.floor(Math.random() * eligibleChars.length)];
     // [메모 선택] 그 캐릭터의 메모 중 문제로 가장 적게 쓰인 메모를 우선한다.
@@ -911,7 +915,7 @@ setInterval(async () => {
     if (targetChar && quizCount < MAX_QUIZZES_PER_CHAR) {
       isGeneratingQuiz = true;
       // [퀴즈 유형 계산] 허용된 유형 중 대기 중인 문제에 가장 적게 들어 있는 유형을 우선하고, 직전 유형은 피한다.
-      const availableTypes = (targetChar.quizTypes && targetChar.quizTypes.length > 0) ? targetChar.quizTypes : ['ox', 'multiple', 'short'];
+      const availableTypes = Array.isArray(targetChar.quizTypes) ? targetChar.quizTypes : ['ox', 'multiple', 'short'];
       const quizType = pickLeastScored(availableTypes, t => quizStorage.filter(q => q.charIdx === randomMemo.charIdx && q.type === t).length * 10 + (availableTypes.length > 1 && lastQuizTypeByChar[randomMemo.charIdx] === t ? 1 : 0));
 
       // [중복 방지] 이 메모로 이미 냈던 문제와 지금 대기 중인 문제를 AI에게 알려 주고, 그와 다른 문제를 만들게 한다.

@@ -1223,6 +1223,15 @@
       font-size: 12px;
     }
 
+    /* 출제 유형을 모두 해제하면 이 캐릭터의 문제 생성이 꺼진다. 그 상태를 알려 주는 표시. */
+    #char-memo-modal .quiz-gen-off-note {
+      padding: 0 6px;
+      border-radius: 4px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-weight: 900;
+    }
+
     #char-memo-modal .quiz-type-label {
       font-weight: 900;
       color: #4b5563;
