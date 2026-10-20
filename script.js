@@ -178,8 +178,8 @@ document.querySelectorAll('.close-modal-btn').forEach(btn => {
     // 1. 만약 현재 닫으려는 창이 '학습 메모장(글쓰기)' 창이라면, 
     // 오버레이를 완전히 닫지 않고 이전 화면인 '학습 메모 목록' 창으로 되돌아갑니다. (UX 개선)
     if (parentModal && parentModal.id === 'notepad-modal') {
+      finalizeNotepad();
       openSpecificModal('char-memo-modal');
-      editingMemoId = null;
       return;
     }
 
@@ -204,6 +204,7 @@ document.querySelectorAll('.close-modal-btn').forEach(btn => {
 // 예외 없이 모든 창을 완전히 닫고 메인으로 돌아가도록 유저 편의성을 제공합니다.
 modalOverlay.addEventListener('click', (e) => {
   if (e.target === modalOverlay) {
+    if (!document.getElementById('notepad-modal').classList.contains('hidden')) finalizeNotepad();
     modalOverlay.classList.add('hidden');
     currentActiveQuiz = null;
     editingMemoId = null;
@@ -229,7 +230,7 @@ function loadAppData() {
   try {
     const data = localStorage.getItem(APP_DATA_KEY);
     if (data) {
-      const parsed = JSON.parse(data); todoList = parsed.todoList || []; quizStorage = parsed.quizStorage || []; memoStorage = parsed.memoStorage || []; wrongStorage = parsed.wrongStorage || [];
+      const parsed = JSON.parse(data); todoList = parsed.todoList || []; quizStorage = parsed.quizStorage || []; memoStorage = parsed.memoStorage || []; memoStorage.forEach(m => { delete m.draft; }); wrongStorage = parsed.wrongStorage || [];
       // 구버전 데이터(dayKey 없음)는 달력 날짜가 바뀐 경우에만 한 번 초기화한다.
       const savedDayKey = parsed.dayKey || ((parsed.lastDate && parsed.lastDate !== new Date().toLocaleDateString()) ? 'legacy' : currentDayKey);
       if (savedDayKey !== currentDayKey) { rolloverQuests(); saveAppData(); }
@@ -572,7 +573,7 @@ window.handleTodoAction = function (id, action) { const idx = todoList.findIndex
 window.editMemo = function (memoId, charIdx) {
   const memo = memoStorage.find(m => m.id === memoId);
   if (!memo) return;
-  editingMemoId = memoId;
+  editingMemoId = memoId; resetNotepadAutosave();
   targetCharIdxForMemo = charIdx;
   const charName = window.Questify.getCharacters()[charIdx]?.name || '캐릭터';
   document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터의 메모를 수정합니다.`;
@@ -629,7 +630,7 @@ window.deleteMemo = function (memoId, charIdx) { showCustomConfirm('이 메모�
 // 메모장 Tab 들여쓰기 처리. execCommand를 우선 사용해 Ctrl+Z 되돌리기가 유지되도록 한다.
 function replaceTextareaRange(ta, start, end, text) {
   ta.setSelectionRange(start, end);
-  if (!document.execCommand('insertText', false, text)) ta.setRangeText(text, start, end, 'end');
+  if (!document.execCommand('insertText', false, text)) { ta.setRangeText(text, start, end, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); }
 }
 function handleNotepadTab(ta, outdent) {
   const { selectionStart: s, selectionEnd: en, value: v } = ta;
@@ -747,9 +748,54 @@ function initMemoPref(selectId, storageKey, cssVar) {
 initMemoPref('memo-font-select', 'questify_memo_font', '--memo-font');
 initMemoPref('memo-size-select', 'questify_memo_size', '--memo-font-size');
 
+// [자동 저장] 메모장에 입력하는 동안 잠시 멈추면 자동으로 저장한다.
+// 새 메모는 첫 저장 때 임시(draft) 메모로 만들어 두고, 저장 버튼이나 닫기 시점에 확정한다. 임시 메모로는 퀴즈를 만들지 않는다.
+const NOTEPAD_AUTOSAVE_DELAY_MS = 700;
+let notepadAutoId = null; let notepadAutoTimer = null;
+function resetNotepadAutosave() {
+  clearTimeout(notepadAutoTimer); notepadAutoTimer = null; notepadAutoId = null;
+  const st = document.getElementById('notepad-autosave-status'); if (st) st.innerText = '';
+}
+function autosaveNotepad() {
+  notepadAutoTimer = null;
+  const content = document.getElementById('input-notepad-content').value.trim();
+  const st = document.getElementById('notepad-autosave-status');
+  if (!content) { if (st) st.innerText = ''; return; } // 빈 내용으로는 저장하지 않아 기존 메모가 지워지지 않게 한다.
+  const id = editingMemoId || notepadAutoId;
+  const memo = id && memoStorage.find(m => m.id === id);
+  if (memo) {
+    if (memo.content !== content) {
+      memo.content = content;
+      if (!memo.draft) memo.date = new Date().toLocaleDateString() + ' (수정됨)';
+    }
+  } else {
+    const created = { id: uid(), charIdx: targetCharIdxForMemo, content, date: new Date().toLocaleDateString(), draft: true };
+    memoStorage.push(created); notepadAutoId = created.id;
+  }
+  saveAppData();
+  if (st) { const d = new Date(); st.innerText = `✓ 자동 저장됨 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+}
+function scheduleNotepadAutosave() {
+  const st = document.getElementById('notepad-autosave-status'); if (st) st.innerText = '입력 중…';
+  clearTimeout(notepadAutoTimer);
+  notepadAutoTimer = setTimeout(autosaveNotepad, NOTEPAD_AUTOSAVE_DELAY_MS);
+}
+// 메모장을 닫을 때: 대기 중인 자동 저장을 즉시 반영하고, 임시 메모를 확정한 뒤 메모 목록을 갱신한다.
+function finalizeNotepad() {
+  const open = !document.getElementById('notepad-modal').classList.contains('hidden');
+  if (notepadAutoTimer || open) { clearTimeout(notepadAutoTimer); autosaveNotepad(); }
+  const memo = notepadAutoId && memoStorage.find(m => m.id === notepadAutoId);
+  if (memo) { delete memo.draft; saveAppData(); }
+  notepadAutoId = null; editingMemoId = null;
+  renderCharMemos(targetCharIdxForMemo); renderAll();
+}
+document.getElementById('input-notepad-content').addEventListener('input', scheduleNotepadAutosave);
+// 탭을 닫거나 새로고침해도 마지막 입력이 남도록 한다.
+window.addEventListener('pagehide', () => { if (!document.getElementById('notepad-modal').classList.contains('hidden')) autosaveNotepad(); });
+
 window.submitNotepad = function () { document.getElementById('btn-submit-notepad').click(); };
 document.getElementById('btn-open-notepad').onclick = () => {
-  editingMemoId = null;
+  editingMemoId = null; resetNotepadAutosave();
   const charName = window.Questify.getCharacters()[targetCharIdxForMemo]?.name || '캐릭터';
   document.getElementById('notepad-target-char-label').innerText = `[${charName}] 캐릭터에게 메모를 추가합니다.`;
   document.getElementById('input-notepad-content').value = '';
@@ -762,17 +808,21 @@ document.getElementById('btn-submit-notepad').addEventListener('click', () => {
   const content = document.getElementById('input-notepad-content').value.trim();
   if (!content) { showCustomAlert('공부한 내용을 적어주세요!'); return; }
 
+  clearTimeout(notepadAutoTimer); notepadAutoTimer = null;
   if (editingMemoId) {
     const idx = memoStorage.findIndex(m => m.id === editingMemoId);
     if (idx !== -1) {
+      if (memoStorage[idx].content !== content) memoStorage[idx].date = new Date().toLocaleDateString() + ' (수정됨)';
       memoStorage[idx].content = content;
-      memoStorage[idx].date = new Date().toLocaleDateString() + ' (수정됨)';
     }
     editingMemoId = null; saveAppData();
     showCustomAlert('메모가 수정되었습니다!', () => { renderCharMemos(targetCharIdxForMemo); openSpecificModal('char-memo-modal'); });
   } else {
-    memoStorage.push({ id: uid(), charIdx: targetCharIdxForMemo, content: content, date: new Date().toLocaleDateString() });
-    saveAppData();
+    // 자동 저장으로 이미 만들어진 새 메모가 있으면 그 메모를 확정하고, 없으면 새로 만든다.
+    const draftMemo = notepadAutoId && memoStorage.find(m => m.id === notepadAutoId);
+    if (draftMemo) { draftMemo.content = content; delete draftMemo.draft; }
+    else memoStorage.push({ id: uid(), charIdx: targetCharIdxForMemo, content: content, date: new Date().toLocaleDateString() });
+    notepadAutoId = null; saveAppData();
     showCustomAlert('메모가 저장되었습니다!\n(문제는 시간 경과에 따라 자동으로 생성됩니다.)', () => { renderCharMemos(targetCharIdxForMemo); openSpecificModal('char-memo-modal'); renderAll(); });
   }
 });
@@ -839,11 +889,11 @@ setInterval(async () => {
     const chars = window.Questify.getCharacters();
     // [캐릭터 선택] 메모가 있고 문제 보관함에 여유가 있는 캐릭터 중에서 무작위로 고른다. (보관함이 가득 찬 캐릭터는 제외해 생성 턴이 낭비되지 않게 한다.)
     const pendingOf = ci => quizStorage.filter(q => q.charIdx === ci).length;
-    const eligibleChars = chars.map((_, ci) => ci).filter(ci => memoStorage.some(m => m.charIdx === ci) && pendingOf(ci) < MAX_QUIZZES_PER_CHAR);
+    const eligibleChars = chars.map((_, ci) => ci).filter(ci => memoStorage.some(m => m.charIdx === ci && !m.draft) && pendingOf(ci) < MAX_QUIZZES_PER_CHAR);
     if (eligibleChars.length === 0) return;
     const pickedCharIdx = eligibleChars[Math.floor(Math.random() * eligibleChars.length)];
     // [메모 선택] 그 캐릭터의 메모 중 문제로 가장 적게 쓰인 메모를 우선한다.
-    const randomMemo = pickLeastScored(memoStorage.filter(m => m.charIdx === pickedCharIdx), m => m.quizUses || 0);
+    const randomMemo = pickLeastScored(memoStorage.filter(m => m.charIdx === pickedCharIdx && !m.draft), m => m.quizUses || 0);
     const targetChar = chars[randomMemo.charIdx];
     const quizCount = pendingOf(randomMemo.charIdx);
 
