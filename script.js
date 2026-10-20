@@ -849,6 +849,65 @@ function saveQuizTypesForChar() {
 function updateQuizGenNote(types) {
   document.getElementById('quiz-gen-off-note').classList.toggle('hidden', types.length > 0);
 }
+// --- 데이터 옮기기 (내보내기/가져오기). 검사와 적용 로직은 data-transfer.js ---
+function setTransferStatus(text, good) {
+  const el = document.getElementById('transfer-status');
+  el.textContent = text;
+  el.className = 'transfer-status ' + (text ? (good ? 'good' : 'bad') : '');
+}
+function backupText() {
+  return JSON.stringify(QuestifyTransfer.buildBackup(k => localStorage.getItem(k)));
+}
+document.getElementById('btn-data-transfer').addEventListener('click', () => {
+  setTransferStatus('');
+  document.getElementById('export-text').classList.add('hidden');
+  document.getElementById('transfer-text').value = '';
+  openSpecificModal('data-transfer-modal');
+});
+document.getElementById('btn-export-file').addEventListener('click', () => {
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const url = URL.createObjectURL(new Blob([backupText()], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = `questify-백업-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTransferStatus('파일로 저장했어요. 다른 기기로 옮긴 뒤 "가져오기"에서 불러오세요.', true);
+});
+document.getElementById('btn-export-copy').addEventListener('click', async () => {
+  const text = backupText();
+  const box = document.getElementById('export-text');
+  try {
+    await navigator.clipboard.writeText(text);
+    box.classList.add('hidden');
+    setTransferStatus('복사했어요. 다른 기기의 "가져오기" 칸에 붙여 넣으세요.', true);
+  } catch (e) {
+    // 자동 복사가 막힌 환경에서는 글자를 보여 주고 직접 복사하게 한다.
+    box.value = text; box.classList.remove('hidden'); box.focus(); box.select();
+    setTransferStatus('자동 복사가 안 돼요. 아래 글자를 직접 복사해 주세요.', false);
+  }
+});
+document.getElementById('btn-import-file').addEventListener('click', () => document.getElementById('input-import-file').click());
+document.getElementById('input-import-file').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById('transfer-text').value = String(reader.result); setTransferStatus('파일을 불러왔어요. "가져오기"를 눌러 주세요.', true); };
+  reader.onerror = () => setTransferStatus('파일을 읽지 못했어요.', false);
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('btn-import-apply').addEventListener('click', () => {
+  const result = QuestifyTransfer.parseBackup(document.getElementById('transfer-text').value);
+  if (!result.ok) { setTransferStatus(result.error, false); return; }
+  const s = result.summary;
+  const when = s.exportedAt ? new Date(s.exportedAt).toLocaleString() : '알 수 없음';
+  showCustomConfirm(`이 기기의 현재 데이터가 모두 바뀝니다.\n\n내보낸 시각: ${when}\n캐릭터 ${s.characters} · 퀘스트 ${s.todos} · 메모 ${s.memos} · 퀴즈 ${s.quizzes}\n\n계속할까요?`, () => {
+    QuestifyTransfer.applyBackup(result.backup, (k, v) => localStorage.setItem(k, v), k => localStorage.removeItem(k));
+    location.reload(); // 새 데이터로 화면과 메모리를 다시 만든다.
+  });
+});
+
 document.getElementById('quiz-type-ox').addEventListener('change', saveQuizTypesForChar);
 document.getElementById('quiz-type-multiple').addEventListener('change', saveQuizTypesForChar);
 document.getElementById('quiz-type-short').addEventListener('change', saveQuizTypesForChar);

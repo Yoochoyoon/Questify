@@ -265,11 +265,40 @@
         <div id="solve-result-state" class="hidden" tabindex="0"></div>
       </div>
 
+      <!-- 데이터 옮기기: 이 기기의 데이터를 파일이나 코드로 내보내고, 다른 기기에서 내보낸 백업을 가져온다. -->
+      <div id="data-transfer-modal" class="modal-content hidden">
+        <button class="close-modal-btn">X</button>
+        <h2 style="text-align:center; margin-top:0;">데이터 옮기기</h2>
+        <div class="transfer-body">
+        <div class="transfer-section">
+          <h3>내보내기</h3>
+          <div class="transfer-desc">이 기기의 캐릭터, 퀘스트, 메모, 퀴즈를 백업으로 만들어요. (AI 키는 포함되지 않아요)</div>
+          <div class="transfer-row">
+            <button type="button" id="btn-export-file" class="submit-btn">파일로 저장</button>
+            <button type="button" id="btn-export-copy" class="submit-btn">코드 복사</button>
+          </div>
+          <textarea id="export-text" class="area hidden" readonly spellcheck="false"></textarea>
+        </div>
+        <div class="transfer-section">
+          <h3>가져오기</h3>
+          <div class="transfer-desc">다른 기기에서 내보낸 백업을 불러와요. 이 기기의 현재 데이터는 모두 바뀌어요.</div>
+          <div class="transfer-row">
+            <button type="button" id="btn-import-file" class="submit-btn">파일 선택</button>
+            <input type="file" id="input-import-file" accept=".json,application/json" class="hidden">
+          </div>
+          <textarea id="transfer-text" class="area" placeholder="내보낸 코드를 여기에 붙여 넣으세요" spellcheck="false"></textarea>
+          <button type="button" id="btn-import-apply" class="submit-btn">가져오기</button>
+        </div>
+        <div id="transfer-status" class="transfer-status" aria-live="polite"></div>
+        </div>
+      </div>
+
       <!-- 계정 내 캐릭터 풀(Pool)을 전반적으로 관리하는 슬롯 모달이다. -->
       <div id="slot-modal" class="modal-content hidden">
         <div class="slot-btn-row">
           <button id="btn-reset-all-data" style="padding:0 5px; width: 80x; height: 30px;">전체 데이터 삭제</button>
           <button id="btn-api-key" style="padding:0 5px; width: 68px; height: 30px;">API키 설정</button>
+          <button id="btn-data-transfer" style="padding:0 5px; height: 30px;">데이터 옮기기</button>
         </div>
 
         <button class="close-modal-btn">X</button>
@@ -345,6 +374,7 @@
 
 <script src="lib/marked.min.js"></script>
 <script src="lib/purify.min.js"></script>
+<script src="data-transfer.js"></script>
 <script src="script.js"></script>
 
 </body>
