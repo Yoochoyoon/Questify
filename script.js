@@ -157,7 +157,7 @@ const modalOverlay = document.getElementById('modal-overlay');
 let isMemoOpenedFromSlot = false; // [추가됨] 캐릭터 유니온(슬롯) 창에서 메모장으로 진입했는지 여부를 저장하는 전역 플래그입니다.
 
 function closeAllCustomModals() { document.querySelectorAll('#modal-overlay .modal-content').forEach(m => m.classList.add('hidden')); }
-function openSpecificModal(modalId) { modalOverlay.classList.remove('hidden'); closeAllCustomModals(); document.getElementById(modalId).classList.remove('hidden'); }
+function openSpecificModal(modalId) { modalOverlay.classList.remove('hidden'); closeAllCustomModals(); document.getElementById(modalId).classList.remove('hidden'); if (modalId === 'notepad-modal' && typeof updateMemoPreview === 'function') updateMemoPreview(); }
 
 // [학습 메모] 전체 화면 보기 토글. 상태는 메모장을 다녀와도 유지되며, 오버레이 여백은 CSS(:has)가 처리한다.
 function setMemoFullscreen(on) {
@@ -588,9 +588,13 @@ window.editMemo = function (memoId, charIdx) {
 if (typeof DOMPurify !== 'undefined') {
   DOMPurify.addHook('afterSanitizeAttributes', node => { if (node.tagName === 'A') { node.setAttribute('target', '_blank'); node.setAttribute('rel', 'noopener noreferrer'); } });
 }
+function renderMemoMarkdown(content) {
+  if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return escapeHTML(content);
+  return DOMPurify.sanitize(marked.parse(content, { gfm: true, breaks: true }));
+}
 function renderMemoHTML(content) {
   if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return escapeHTML(content);
-  const html = DOMPurify.sanitize(marked.parse(content, { gfm: true, breaks: true }));
+  const html = renderMemoMarkdown(content);
   const body = new DOMParser().parseFromString(html, 'text/html').body;
   body.querySelectorAll('p,h1,h2,h3,h4,h5,h6,li,pre,blockquote,tr').forEach(n => n.append(' '));
   const plain = body.textContent.replace(/\s+/g, ' ').trim();
@@ -645,6 +649,7 @@ function handleNotepadTab(ta, outdent) {
 const MEMO_INLINE_FMT = {
   bold: ['**', '**', '굵은 글자'],
   italic: ['*', '*', '기울인 글자'],
+  underline: ['<u>', '</u>', '밑줄 글자'],
   strike: ['~~', '~~', '취소선 글자'],
   mark: ['<mark>', '</mark>', '형광펜 글자'],
   code: ['`', '`', '코드'],
@@ -688,7 +693,30 @@ function applyNotepadFormat(fmt, color) {
   if (fmt === 'color') wrapNotepadSelection(ta, `<span style="color:${color}">`, '</span>', '색 글자');
   else if (MEMO_INLINE_FMT[fmt]) wrapNotepadSelection(ta, ...MEMO_INLINE_FMT[fmt]);
   else if (MEMO_LINE_FMT[fmt]) toggleNotepadLinePrefix(ta, MEMO_LINE_FMT[fmt]);
+  updateMemoPreview();
 }
+
+// [실시간 미리보기] 입력창 내용을 저장 후 보이는 모습 그대로 미리보기 칸에 그린다. execCommand가 아닌 경로로 값이 바뀌는 경우도 있어 직접 호출한다.
+function updateMemoPreview() {
+  const box = document.getElementById('memo-preview');
+  if (!box || box.classList.contains('hidden')) return;
+  const text = document.getElementById('input-notepad-content').value;
+  box.innerHTML = text.trim() ? renderMemoMarkdown(text) : '<span class="memo-preview-empty">입력한 내용이 여기에 서식대로 표시돼요.</span>';
+}
+document.getElementById('input-notepad-content').addEventListener('input', updateMemoPreview);
+
+// 미리보기 켜기/끄기. 선택은 브라우저에 저장한다.
+(function initMemoPreviewToggle() {
+  const box = document.getElementById('memo-preview'), btn = document.getElementById('btn-memo-preview-toggle');
+  const apply = on => { box.classList.toggle('hidden', !on); btn.classList.toggle('active', on); if (on) updateMemoPreview(); };
+  let on = true;
+  try { on = localStorage.getItem('questify_memo_preview') !== 'off'; } catch (e) { }
+  apply(on);
+  btn.addEventListener('click', () => {
+    on = !on; apply(on);
+    try { localStorage.setItem('questify_memo_preview', on ? 'on' : 'off'); } catch (e) { }
+  });
+})();
 
 document.querySelectorAll('.memo-fmt-btns button').forEach(btn => {
   btn.addEventListener('mousedown', e => e.preventDefault()); // 클릭해도 메모장의 선택 영역이 풀리지 않도록 한다.
@@ -700,6 +728,7 @@ document.getElementById('input-notepad-content').addEventListener('keydown', e =
   const k = e.key.toLowerCase();
   if (k === 'b') { e.preventDefault(); applyNotepadFormat('bold'); }
   else if (k === 'i') { e.preventDefault(); applyNotepadFormat('italic'); }
+  else if (k === 'u') { e.preventDefault(); applyNotepadFormat('underline'); }
 });
 
 // 메모 전용 폰트·글자 크기 설정. 메모장 입력창과 메모 목록 본문에만 적용되며 브라우저에 저장된다.

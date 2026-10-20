@@ -2276,13 +2276,48 @@
 
     /* 메모 전용 폰트: 메모장 입력창과 메모 목록 본문에만 적용된다. (script.js에서 --memo-font 설정) */
     #input-notepad-content,
+    #memo-preview,
     .memo-text {
       font-family: var(--memo-font, inherit);
       tab-size: 4;
     }
 
-    #input-notepad-content { font-size: var(--memo-font-size, 14px); }
+    #input-notepad-content { font-size: var(--memo-font-size, 14px); min-height: 0; }
+    #memo-preview { font-size: var(--memo-font-size, 14px); }
     .memo-text { font-size: var(--memo-font-size, inherit); }
+
+    /* 실시간 미리보기 칸: 입력창과 높이를 나눠 쓰며, 저장 후 메모 목록과 같은 마크다운 스타일을 쓴다. */
+    #memo-preview {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 10px 14px;
+      border: 3px dashed #9A8978;
+      border-radius: 12px;
+      background: #fffdf9;
+      color: #000;
+      font-weight: 800;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    #memo-preview.hidden { display: none; }
+    .memo-preview-empty { color: #9ca3af; font-weight: 700; }
+    .memo-md u { text-decoration: underline; }
+
+    .memo-preview-toggle {
+      height: 24px;
+      padding: 0 8px;
+      border: 2px solid #9A8978;
+      border-radius: 6px;
+      background: #F0E3D3;
+      font-size: 12px;
+      font-weight: 800;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .memo-preview-toggle.active { background: #59A3F8; color: #fff; border-color: #2d6fc4; }
 
     .memo-toolbar {
       display: flex;

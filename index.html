@@ -194,6 +194,7 @@
           <div class="memo-fmt-btns">
             <button type="button" data-fmt="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
             <button type="button" data-fmt="italic" title="기울임 (Ctrl+I)"><i>I</i></button>
+            <button type="button" data-fmt="underline" title="밑줄 (Ctrl+U)"><u>U</u></button>
             <button type="button" data-fmt="strike" title="취소선"><s>S</s></button>
             <button type="button" data-fmt="mark" title="형광펜"><span style="background:#fde047; padding:0 2px;">형</span></button>
             <button type="button" data-fmt="color" data-color="#ef4444" title="빨간 글자"><span style="color:#ef4444;">A</span></button>
@@ -207,6 +208,7 @@
             <button type="button" data-fmt="code" title="코드">&lt;/&gt;</button>
           </div>
           <div class="memo-font-opts">
+            <button type="button" id="btn-memo-preview-toggle" class="memo-preview-toggle" title="미리보기 켜기/끄기">👁 미리보기</button>
             <select id="memo-size-select" title="메모 글자 크기">
               <option value="12px">작게</option>
               <option value="" selected>보통</option>
@@ -228,6 +230,8 @@
         </div>
         <textarea id="input-notepad-content" class="area" placeholder="공부한 내용을 이곳에 메모하세요! (줄바꿈: Enter, 저장 및 창 닫기: Esc)&#10;서식도 쓸 수 있어요: # 제목, - 목록, **굵게**"
           onkeydown="if(event.key==='Escape'){ event.preventDefault(); window.submitNotepad(); }"></textarea>
+        <!-- 입력한 마크다운이 저장 후 보일 모습 그대로 실시간으로 표시되는 미리보기 칸이다. -->
+        <div id="memo-preview" class="memo-md" aria-label="메모 미리보기"></div>
         <button id="btn-submit-notepad" class="submit-btn" style="background:#59A3F8; margin-top:auto;">저장</button>
       </div>
 
