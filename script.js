@@ -410,7 +410,7 @@ function renderTodoList() {
                         <button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>X</span></button>`;
     } else {
       if (item.isMissed) innerHTML += `<span class="subtask-card-clear input" style="margin-right:4px;">미완료</span><button onclick="event.stopPropagation(); restoreMissedTodo(${item.id})" class="mini-btn" title="오늘 목록으로 다시 가져오기">↩</button>`;
-      if (item.status === 'clear' && !item.isPastLog) innerHTML += `<button onclick="event.stopPropagation(); cancelTodoClear(${item.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
+      if (item.status === 'clear' && !item.isPastLog) innerHTML += `<button onclick="event.stopPropagation(); cancelTodoClear(${item.id})" class="mini-btn undo-btn" title="완료 취소">↩</button>`;
       innerHTML += `<button onclick="event.stopPropagation(); handleTodoAction(${item.id}, 'delete')" id="del" class="mini-btn"><span>X</span></button>`;
     }
     innerHTML += `</div>`;
@@ -448,10 +448,10 @@ function renderTodoList() {
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'clear')" id="suc" class="mini-btn">✔</button>
                           <button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px;">X</button>`;
         } else if (!isLogView && sub.status === 'clear') {
-          if (!sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
+          if (!sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩</button>`;
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px; margin-left:4px;">X</button>`;
         } else if (isLogView) {
-          if (sub.status === 'clear' && !sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩️</button>`;
+          if (sub.status === 'clear' && !sub.isPastLog) subHTML += `<button onclick="event.stopPropagation(); cancelSubtaskClear(${item.id}, ${sub.id})" class="mini-btn undo-btn" title="완료 취소">↩</button>`;
           subHTML += `<button onclick="event.stopPropagation(); handleSubtaskAction(${item.id}, ${sub.id}, 'delete')" id="del" class="mini-btn" style="padding: 4px 6px; font-size: 11px;">X</button>`;
         }
         subHTML += `</div>`;
