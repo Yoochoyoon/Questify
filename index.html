@@ -265,6 +265,31 @@
         <div id="solve-result-state" class="hidden" tabindex="0"></div>
       </div>
 
+      <!-- AI 설정: 문제 생성과 채점에 쓰는 AI(팩트챗/제미나이)를 토글로 고르고 모델과 API 키를 입력한다. -->
+      <div id="ai-settings-modal" class="modal-content hidden">
+        <button class="close-modal-btn">X</button>
+        <h2 style="text-align:center; margin-top:0;">AI 설정</h2>
+        <div class="transfer-body">
+          <div class="transfer-section">
+            <div class="ai-provider-toggle" role="group" aria-label="AI 제공자">
+              <button type="button" class="ai-provider-btn active" data-provider="factchat" aria-pressed="true">팩트챗</button>
+              <button type="button" class="ai-provider-btn" data-provider="gemini" aria-pressed="false">제미나이</button>
+            </div>
+            <div id="ai-endpoint-note" class="transfer-desc"></div>
+            <label class="ai-label" for="ai-model">모델</label>
+            <input type="text" id="ai-model" class="field" autocomplete="off" spellcheck="false">
+            <label class="ai-label" for="ai-key">API 키</label>
+            <input type="password" id="ai-key" class="field" autocomplete="off" spellcheck="false">
+            <div class="transfer-desc">API 키는 위에 적힌 주소로만 전송돼요. 제공자마다 키를 따로 저장하고, 이 기기의 브라우저에만 남으며 백업에는 포함되지 않아요.</div>
+            <div class="transfer-row">
+              <button type="button" id="btn-ai-default" class="submit-btn">모델 기본값</button>
+              <button type="button" id="btn-ai-save" class="submit-btn" style="background:#59A3F8;">저장</button>
+            </div>
+          </div>
+          <div id="ai-status" class="transfer-status" aria-live="polite"></div>
+        </div>
+      </div>
+
       <!-- 데이터 옮기기: 이 기기의 데이터를 파일이나 코드로 내보내고, 다른 기기에서 내보낸 백업을 가져온다. -->
       <div id="data-transfer-modal" class="modal-content hidden">
         <button class="close-modal-btn">X</button>
@@ -374,6 +399,7 @@
 
 <script src="lib/marked.min.js"></script>
 <script src="lib/purify.min.js"></script>
+<script src="ai-config.js"></script>
 <script src="data-transfer.js"></script>
 <script src="script.js"></script>
 

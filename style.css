@@ -2920,6 +2920,29 @@
     }
 
     .transfer-section h3 { margin: 0; font-size: 15px; }
+    .ai-label { font-size: 12px; font-weight: 900; color: #374151; }
+    #ai-endpoint-note { white-space: pre-line; word-break: break-all; }
+
+    /* AI 제공자 토글 (팩트챗 / 제미나이) */
+    .ai-provider-toggle { display: flex; gap: 6px; }
+
+    .ai-provider-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border: 3px solid #9A8978;
+      border-radius: 10px;
+      background: #F0E3D3;
+      color: #000;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ai-provider-btn.active {
+      background: #59A3F8;
+      border-color: #2d6fc4;
+      color: #fff;
+    }
     .transfer-desc { font-size: 12px; font-weight: 700; color: #4b5563; line-height: 1.4; }
     .transfer-row { display: flex; gap: 8px; }
     .transfer-row .submit-btn { flex: 1; padding: 8px 10px; font-size: 14px; }
